@@ -19,16 +19,20 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 
   const titulo = `${peca.nome} — ${MARCA.nome}`;
-  const imagemUrl = `${MARCA.url}/og/peca?slug=${peca.slug}`;
+  const imagemUrl = new URL(`/og/peca?slug=${peca.slug}`, MARCA.url);
 
   return {
     title: titulo,
     description: peca.capacidade,
-    alternates: { canonical: `${MARCA.url}/?peca=${peca.slug}` },
+    // alternates.canonical e openGraph.url ficam de fora aqui de propósito:
+    // o resolvedor de metadados do Next 15 derruba a query string desses dois
+    // campos ao resolvê-los contra metadataBase (bug conhecido, vercel/next.js#72810).
+    // A tag <link rel="canonical"> e o <meta property="og:url"> reais são
+    // renderizados à mão no JSX abaixo, que o React 19 já hasteia pro <head>
+    // sem passar pelo resolvedor com bug. og:image não é afetado — segue aqui.
     openGraph: {
       title: titulo,
       description: peca.capacidade,
-      url: `${MARCA.url}/?peca=${peca.slug}`,
       images: [imagemUrl],
     },
     twitter: {
@@ -43,9 +47,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function Home({ searchParams }: Props) {
   const sp = await searchParams;
   const pecaAberta = sp.peca ? pecaPorSlug(sp.peca) ?? null : null;
+  const urlPagina = pecaAberta ? new URL(`/?peca=${pecaAberta.slug}`, MARCA.url).toString() : null;
 
   return (
     <>
+      {urlPagina && (
+        <>
+          <link rel="canonical" href={urlPagina} />
+          <meta property="og:url" content={urlPagina} />
+        </>
+      )}
       <Identificacao />
       <Plano
         pecas={PECAS}
