@@ -4,15 +4,36 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useRouter } from "next/navigation";
 import type { Grupo, GrupoInfo, Peca } from "@/lib/manifesto";
 import { pecasPorGrupo } from "@/lib/manifesto";
-import { clampZoom, enquadrar, transformDoMundo, zoomEmTornoDoCursor, type Camera } from "@/lib/camera";
-import { useModoPlano } from "@/lib/useMatchMedia";
+import {
+  clampZoom,
+  enquadrar,
+  transformDoMundo,
+  zoomEmTornoDoCursor,
+  type Camera,
+} from "@/lib/camera";
+import { faseDoSlug } from "@/lib/hash";
+import { flutuacao, passoMagnetismo, passoParallaxeBarra, type OffsetTela } from "@/lib/movimento";
+import { useMatchMedia, useModoPlano } from "@/lib/useMatchMedia";
 import { Cartao } from "@/components/Cartao";
 import { BarraControles } from "@/components/BarraControles";
 import { PainelPeca } from "@/components/PainelPeca";
 
+type GsapInstance = typeof import("gsap")["gsap"];
+type GsapTween = ReturnType<GsapInstance["to"]>;
+
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+const QUERY_REDUZIDO = "(prefers-reduced-motion: reduce)";
 const LIMIAR_ARRASTO = 4;
+const IDLE_MS = 2000;
+
+type MotionState = {
+  faseOffset: number;
+  periodo: number;
+  magnet: OffsetTela;
+  scaleRecuo: { v: number };
+  scaleEntrada: { v: number };
+};
 
 type Props = {
   pecas: Peca[];
@@ -28,16 +49,11 @@ function posicaoGrupo(pecasDoGrupo: Peca[]) {
   return { x: minX - 8, y: minY - 68 };
 }
 
-/**
- * Segundo degrau: o plano navega — arrasto, roda, pinça, enquadramento de
- * grupo, câmera segue o foco do teclado. Tudo em corte seco, sem GSAP e sem
- * flutuação/magnetismo — isso é o terceiro commit, por cima disto. Ver
- * seção 13 do prompt-claude-code-04: separar os dois é o que torna uma
- * eventual briga entre o tween e o loop de renderização isolável.
- */
 export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
   const router = useRouter();
+
   const modoPlano = useModoPlano();
+  const reduzido = useMatchMedia(QUERY_REDUZIDO);
   const modo: "lista" | "plano" = modoPlano ? "plano" : "lista";
 
   const [grupoAtivo, setGrupoAtivo] = useState<Grupo | null>(null);
@@ -47,9 +63,15 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
   const mundoRef = useRef<HTMLDivElement | null>(null);
   const barraRef = useRef<HTMLDivElement | null>(null);
   const zoomLabelRef = useRef<HTMLSpanElement | null>(null);
+  const painelRef = useRef<HTMLDivElement | null>(null);
   const cardEls = useRef<Map<string, HTMLAnchorElement>>(new Map());
 
   const camRef = useRef<Camera>({ x: 0, y: 0, k: 1 });
+  const motionRef = useRef<Map<string, MotionState>>(new Map());
+  const cursorRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+  const barraOffsetRef = useRef<OffsetTela>({ x: 0, y: 0 });
+  const suprimidoRef = useRef<Set<string>>(new Set());
+  const painelAbertoRef = useRef(false);
   const origemFocoRef = useRef<string | null>(null);
 
   const dragRef = useRef({
@@ -69,6 +91,25 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
   }>({ ativo: false, distInicio: 0, kInicio: 1, ponteiros: new Map() });
 
   const rafRef = useRef<number | null>(null);
+  const ultimaAtividadeRef = useRef(0);
+  const gsapRef = useRef<GsapInstance | null>(null);
+  const cameraTweenRef = useRef<GsapTween | null>(null);
+
+  // Fase/período de flutuação de cada peça — determinístico, uma vez só.
+  useEffect(() => {
+    for (const p of pecas) {
+      if (!motionRef.current.has(p.slug)) {
+        const { offset, periodo } = faseDoSlug(p.slug);
+        motionRef.current.set(p.slug, {
+          faseOffset: offset,
+          periodo,
+          magnet: { x: 0, y: 0 },
+          scaleRecuo: { v: 1 },
+          scaleEntrada: { v: 1 },
+        });
+      }
+    }
+  }, [pecas]);
 
   useEffect(() => {
     setPecaExibida(pecaAberta);
@@ -79,18 +120,105 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     else cardEls.current.delete(slug);
   }, []);
 
-  const tick = useCallback(() => {
-    const viewport = viewportRef.current;
-    const mundo = mundoRef.current;
-    if (!viewport || !mundo) {
-      rafRef.current = null;
-      return;
+  const marcarAtividade = useCallback(() => {
+    ultimaAtividadeRef.current = performance.now();
+    if (rafRef.current === null && modo === "plano") {
+      rafRef.current = requestAnimationFrame(tick);
     }
-    const { tx, ty, k } = transformDoMundo(camRef.current, viewport.clientWidth, viewport.clientHeight);
-    mundo.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
-    if (zoomLabelRef.current) zoomLabelRef.current.textContent = `${Math.round(k * 100)}%`;
-    rafRef.current = requestAnimationFrame(tick);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo]);
+
+  const tick = useCallback(
+    (agora: number) => {
+      const viewport = viewportRef.current;
+      const mundo = mundoRef.current;
+      if (!viewport || !mundo) {
+        rafRef.current = null;
+        return;
+      }
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
+      const cam = camRef.current;
+      const { tx, ty, k } = transformDoMundo(cam, vw, vh);
+      mundo.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+
+      const painelAberto = painelAbertoRef.current;
+      const cursor = cursorRef.current;
+      const arrastando = dragRef.current.ativo || pinchRef.current.ativo;
+
+      let algoEmMovimento = false;
+
+      for (const peca of pecas) {
+        const el = cardEls.current.get(peca.slug);
+        const motion = motionRef.current.get(peca.slug);
+        if (!el || !motion) continue;
+
+        const suprimido = painelAberto || suprimidoRef.current.has(peca.slug) || arrastando;
+
+        let floatX = 0;
+        let floatY = 0;
+        let floatRot = 0;
+        if (!reduzido && !suprimido) {
+          const f = flutuacao(agora, motion.faseOffset, motion.periodo);
+          floatX = f.x;
+          floatY = f.y;
+          floatRot = f.rot;
+          algoEmMovimento = true;
+        }
+
+        let magnetX = 0;
+        let magnetY = 0;
+        if (!reduzido) {
+          const cartaoTelaX = tx + peca.posicao.x * k;
+          const cartaoTelaY = ty + peca.posicao.y * k;
+          motion.magnet = passoMagnetismo(
+            motion.magnet,
+            cartaoTelaX,
+            cartaoTelaY,
+            cursor.x,
+            cursor.y,
+            suprimido
+          );
+          magnetX = motion.magnet.x / k;
+          magnetY = motion.magnet.y / k;
+          if (Math.abs(motion.magnet.x) > 0.02 || Math.abs(motion.magnet.y) > 0.02) {
+            algoEmMovimento = true;
+          }
+        }
+
+        const escala = motion.scaleRecuo.v * motion.scaleEntrada.v;
+        el.style.transform = `translate(${(floatX + magnetX).toFixed(2)}px, ${(floatY + magnetY).toFixed(2)}px) rotate(${floatRot.toFixed(2)}deg) scale(${escala.toFixed(3)})`;
+      }
+
+      if (!reduzido && barraRef.current) {
+        const centroX = vw / 2;
+        const centroY = 44;
+        barraOffsetRef.current = passoParallaxeBarra(
+          barraOffsetRef.current,
+          centroX,
+          centroY,
+          cursor.x,
+          cursor.y
+        );
+        barraRef.current.style.transform = `translate(-50%, 0) translate(${barraOffsetRef.current.x.toFixed(2)}px, ${barraOffsetRef.current.y.toFixed(2)}px)`;
+        if (Math.abs(barraOffsetRef.current.x) > 0.02 || Math.abs(barraOffsetRef.current.y) > 0.02) {
+          algoEmMovimento = true;
+        }
+      }
+
+      if (zoomLabelRef.current) {
+        zoomLabelRef.current.textContent = `${Math.round(k * 100)}%`;
+      }
+
+      const parado = agora - ultimaAtividadeRef.current > IDLE_MS;
+      if (reduzido && parado && !cameraTweenRef.current?.isActive() && !algoEmMovimento) {
+        rafRef.current = null;
+        return;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    },
+    [pecas, reduzido]
+  );
 
   // Enquadramento inicial e arranque/parada do loop conforme o modo — sem animação de entrada.
   useIsoLayoutEffect(() => {
@@ -100,6 +228,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
         rafRef.current = null;
       }
       if (mundoRef.current) mundoRef.current.style.transform = "";
+      for (const el of cardEls.current.values()) el.style.transform = "";
       return;
     }
     const viewport = viewportRef.current;
@@ -111,68 +240,183 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       vw,
       vh
     );
-    if (rafRef.current === null) rafRef.current = requestAnimationFrame(tick);
+    ultimaAtividadeRef.current = performance.now();
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
     return () => {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modo]);
+
+  // GSAP só é importado dentro do modo plano — nunca no modo lista, nunca com reduced-motion.
+  useEffect(() => {
+    if (modo !== "plano" || reduzido) return;
+    let cancelado = false;
+    import("gsap").then(({ gsap }) => {
+      if (!cancelado) gsapRef.current = gsap;
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [modo, reduzido]);
 
   const enquadrarGrupo = useCallback(
     (grupo: Grupo | null) => {
       const viewport = viewportRef.current;
       if (!viewport || modo !== "plano") return;
+      const vw = viewport.clientWidth;
+      const vh = viewport.clientHeight;
       const alvoPecas = grupo ? pecasPorGrupo(grupo) : pecas;
-      camRef.current = enquadrar(
+      const alvo = enquadrar(
         alvoPecas.map((p) => p.posicao),
-        viewport.clientWidth,
-        viewport.clientHeight
+        vw,
+        vh
       );
+
+      cameraTweenRef.current?.kill();
       setGrupoAtivo(grupo);
+
+      const gsap = gsapRef.current;
+      if (reduzido || !gsap) {
+        camRef.current = { ...alvo };
+      } else {
+        mundoRef.current?.style.setProperty("will-change", "transform");
+        cameraTweenRef.current = gsap.to(camRef.current, {
+          x: alvo.x,
+          y: alvo.y,
+          k: alvo.k,
+          duration: 0.75,
+          ease: "power3.out",
+          delay: 0.05,
+          overwrite: true,
+          onComplete: () => mundoRef.current?.style.removeProperty("will-change"),
+        });
+      }
 
       const dentro = grupo ? new Set(alvoPecas.map((p) => p.slug)) : null;
       for (const peca of pecas) {
         const el = cardEls.current.get(peca.slug);
-        if (!el) continue;
+        const motion = motionRef.current.get(peca.slug);
+        if (!el || !motion) continue;
         const foraDoGrupo = dentro !== null && !dentro.has(peca.slug);
-        el.style.opacity = foraDoGrupo ? "0.22" : "1";
-        el.style.transform = foraDoGrupo ? "scale(0.94)" : "";
-        el.style.boxShadow = foraDoGrupo ? "none" : "";
+
+        if (reduzido || !gsap) {
+          el.style.opacity = foraDoGrupo ? "0.22" : "1";
+          el.style.boxShadow = foraDoGrupo ? "none" : "";
+          motion.scaleRecuo.v = foraDoGrupo ? 0.94 : 1;
+          continue;
+        }
+
+        if (foraDoGrupo) {
+          gsap.to(el, { opacity: 0.22, boxShadow: "none", duration: 0.45, ease: "power2.out" });
+          gsap.to(motion.scaleRecuo, { v: 0.94, duration: 0.45, ease: "power2.out" });
+        } else {
+          gsap.to(el, {
+            opacity: 1,
+            duration: 0.45,
+            ease: "power2.out",
+            onComplete: () => {
+              el.style.boxShadow = "";
+            },
+          });
+          gsap.to(motion.scaleRecuo, { v: 1, duration: 0.45, ease: "power2.out" });
+          if (dentro !== null) {
+            motion.scaleEntrada.v = 0.97;
+            gsap.to(motion.scaleEntrada, { v: 1, duration: 0.5, ease: "back.out(1.4)", delay: 0.5 });
+          }
+        }
       }
+      marcarAtividade();
     },
-    [modo, pecas]
+    [modo, pecas, reduzido, marcarAtividade]
   );
 
   const focarCartao = useCallback(
     (slug: string) => {
       if (modo !== "plano") return;
       const peca = pecas.find((p) => p.slug === slug);
-      if (!peca) return;
-      camRef.current = { ...camRef.current, x: peca.posicao.x, y: peca.posicao.y };
+      const viewport = viewportRef.current;
+      if (!peca || !viewport) return;
+      cameraTweenRef.current?.kill();
+      const alvo: Camera = { x: peca.posicao.x, y: peca.posicao.y, k: camRef.current.k };
+      const gsap = gsapRef.current;
+      if (reduzido || !gsap) {
+        camRef.current = alvo;
+      } else {
+        cameraTweenRef.current = gsap.to(camRef.current, {
+          x: alvo.x,
+          y: alvo.y,
+          duration: 0.6,
+          ease: "power3.out",
+          overwrite: true,
+        });
+      }
+      marcarAtividade();
     },
-    [modo, pecas]
+    [modo, pecas, reduzido, marcarAtividade]
   );
+
+  const suprimirCartao = useCallback((slug: string, ativo: boolean) => {
+    if (ativo) suprimidoRef.current.add(slug);
+    else suprimidoRef.current.delete(slug);
+  }, []);
 
   const abrirCartao = useCallback((slug: string) => {
     origemFocoRef.current = slug;
   }, []);
 
   const fecharPainel = useCallback(() => {
-    router.push("/", { scroll: false });
-  }, [router]);
+    const gsap = gsapRef.current;
+    const painel = painelRef.current;
+    const viewport = viewportRef.current;
+    const ir = () => router.push("/", { scroll: false });
 
+    if (reduzido || !gsap || !painel) {
+      ir();
+      return;
+    }
+    gsap.to(painel, { scale: 0.96, opacity: 0, duration: 0.25, ease: "power2.in", onComplete: ir });
+    if (viewport) {
+      gsap.to(viewport, { filter: "brightness(1)", duration: 0.25, ease: "power2.in" });
+    }
+  }, [reduzido, router]);
+
+  // Escurece o plano atrás do painel, entra o painel, para flutuação/magnetismo geral (via painelAbertoRef, lido no tick).
   useEffect(() => {
-    if (!pecaExibida) {
+    painelAbertoRef.current = Boolean(pecaExibida);
+    const gsap = gsapRef.current;
+    const viewport = viewportRef.current;
+    const painel = painelRef.current;
+
+    if (pecaExibida) {
+      marcarAtividade();
+      if (!reduzido && gsap && painel) {
+        gsap.fromTo(
+          painel,
+          { scale: 0.96, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.1)" }
+        );
+        if (viewport) gsap.to(viewport, { filter: "brightness(0.88)", duration: 0.4, ease: "power2.inOut" });
+      } else if (viewport) {
+        viewport.style.filter = "brightness(0.88)";
+      }
+    } else {
+      if (viewport && (reduzido || !gsap)) viewport.style.filter = "";
       const origem = origemFocoRef.current;
       if (origem) {
         cardEls.current.get(origem)?.focus();
         origemFocoRef.current = null;
       }
-      return;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pecaExibida]);
+
+  useEffect(() => {
+    if (!pecaExibida) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") fecharPainel();
     };
@@ -180,7 +424,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pecaExibida, fecharPainel]);
 
-  // Ponteiro: arrasto, roda e pinça — só existe em modo plano.
+  // Ponteiro: arrasto, roda e pinça.
   useEffect(() => {
     if (modo !== "plano") return;
     const viewport = viewportRef.current;
@@ -188,7 +432,10 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      cameraTweenRef.current?.kill();
+      marcarAtividade();
       viewport.setPointerCapture(e.pointerId);
+
       pinchRef.current.ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pinchRef.current.ponteiros.size === 2) {
         dragRef.current.ativo = false;
@@ -200,6 +447,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
         pinchRef.current.kInicio = camRef.current.k;
         return;
       }
+
       dragRef.current = {
         ativo: true,
         ponteiroId: e.pointerId,
@@ -212,10 +460,13 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     };
 
     const onPointerMove = (e: PointerEvent) => {
+      cursorRef.current = { x: e.clientX, y: e.clientY };
       if (pinchRef.current.ponteiros.has(e.pointerId)) {
         pinchRef.current.ponteiros.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
+
       if (pinchRef.current.ativo && pinchRef.current.ponteiros.size === 2) {
+        marcarAtividade();
         const pts = Array.from(pinchRef.current.ponteiros.values());
         const dx = pts[0].x - pts[1].x;
         const dy = pts[0].y - pts[1].y;
@@ -234,10 +485,14 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
         );
         return;
       }
+
       if (!dragRef.current.ativo || e.pointerId !== dragRef.current.ponteiroId) return;
       const dx = e.clientX - dragRef.current.inicioX;
       const dy = e.clientY - dragRef.current.inicioY;
-      if (Math.abs(dx) + Math.abs(dy) > LIMIAR_ARRASTO) dragRef.current.arrastou = true;
+      if (Math.abs(dx) + Math.abs(dy) > LIMIAR_ARRASTO) {
+        dragRef.current.arrastou = true;
+        marcarAtividade();
+      }
       const k = camRef.current.k;
       camRef.current = {
         x: dragRef.current.camInicioX - dx / k,
@@ -249,11 +504,18 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     const encerrarPonteiro = (e: PointerEvent) => {
       pinchRef.current.ponteiros.delete(e.pointerId);
       if (pinchRef.current.ponteiros.size < 2) pinchRef.current.ativo = false;
-      if (e.pointerId === dragRef.current.ponteiroId) dragRef.current.ativo = false;
+      if (e.pointerId === dragRef.current.ponteiroId) {
+        dragRef.current.ativo = false;
+      }
+    };
+
+    const onPointerLeave = () => {
+      cursorRef.current = { x: null, y: null };
     };
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      marcarAtividade();
       const rect = viewport.getBoundingClientRect();
       const fator = Math.pow(1.0015, -e.deltaY);
       const novoK = clampZoom(camRef.current.k * fator);
@@ -279,6 +541,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     viewport.addEventListener("pointermove", onPointerMove);
     viewport.addEventListener("pointerup", encerrarPonteiro);
     viewport.addEventListener("pointercancel", encerrarPonteiro);
+    viewport.addEventListener("pointerleave", onPointerLeave);
     viewport.addEventListener("wheel", onWheel, { passive: false });
     viewport.addEventListener("click", onClickCapture, { capture: true });
 
@@ -287,10 +550,11 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       viewport.removeEventListener("pointermove", onPointerMove);
       viewport.removeEventListener("pointerup", encerrarPonteiro);
       viewport.removeEventListener("pointercancel", encerrarPonteiro);
+      viewport.removeEventListener("pointerleave", onPointerLeave);
       viewport.removeEventListener("wheel", onWheel);
       viewport.removeEventListener("click", onClickCapture, { capture: true });
     };
-  }, [modo]);
+  }, [modo, marcarAtividade]);
 
   const zoomInicial = useMemo(() => Math.round((camRef.current.k || 1) * 100), []);
 
@@ -319,8 +583,12 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
               className={modo === "plano" ? "absolute w-[340px]" : ""}
               style={pos ? ({ left: `${pos.x}px`, top: `${pos.y}px` } as React.CSSProperties) : undefined}
             >
-              <h2 className="grupo-titulo text-h3 font-medium">{g.titulo}</h2>
-              <p className="grupo-apoio mt-1 text-body-sm">{g.apoio}</p>
+              <h2 className="grupo-titulo text-h3 font-medium transition-colors duration-[0.9s] ease-in-out">
+                {g.titulo}
+              </h2>
+              <p className="grupo-apoio mt-1 text-body-sm transition-colors duration-[0.9s] ease-in-out">
+                {g.apoio}
+              </p>
               <div
                 className={modo === "plano" ? "relative mt-4" : "mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"}
               >
@@ -340,7 +608,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
                     <Cartao
                       peca={p}
                       registrarEl={registrarCardEl}
-                      onSuprimir={() => {}}
+                      onSuprimir={suprimirCartao}
                       onFocoCamera={focarCartao}
                       onAbrir={abrirCartao}
                     />
@@ -365,7 +633,9 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
         />
       )}
 
-      {pecaExibida && <PainelPeca peca={pecaExibida} contato={contato} onFechar={fecharPainel} />}
+      {pecaExibida && (
+        <PainelPeca ref={painelRef} peca={pecaExibida} contato={contato} onFechar={fecharPainel} />
+      )}
     </section>
   );
 }
