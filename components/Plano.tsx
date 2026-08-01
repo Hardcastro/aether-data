@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Grupo, GrupoInfo, Peca } from "@/lib/manifesto";
-import { pecasPorGrupo } from "@/lib/manifesto";
+import { pecasPorGrupo, posicaoMundo } from "@/lib/manifesto";
 import {
   clampZoom,
   enquadrar,
@@ -42,11 +42,16 @@ type Props = {
   contato: { email: string | null; whatsapp: string | null };
 };
 
-/** Posição de mundo do título de um grupo — acima-esquerda do bloco de cartões. */
+/**
+ * Posição de mundo do título de um grupo — acima-esquerda do bloco de
+ * cartões, com folga fixa (não escalada por FATOR_ESCALA_MUNDO) reservada
+ * para até duas linhas de título + apoio.
+ */
 function posicaoGrupo(pecasDoGrupo: Peca[]) {
-  const minX = Math.min(...pecasDoGrupo.map((p) => p.posicao.x));
-  const minY = Math.min(...pecasDoGrupo.map((p) => p.posicao.y));
-  return { x: minX - 8, y: minY - 68 };
+  const posicoes = pecasDoGrupo.map(posicaoMundo);
+  const minX = Math.min(...posicoes.map((p) => p.x));
+  const minY = Math.min(...posicoes.map((p) => p.y));
+  return { x: minX - 8, y: minY - 140 };
 }
 
 export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
@@ -169,8 +174,9 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
         let magnetX = 0;
         let magnetY = 0;
         if (!reduzido) {
-          const cartaoTelaX = tx + peca.posicao.x * k;
-          const cartaoTelaY = ty + peca.posicao.y * k;
+          const posMundo = posicaoMundo(peca);
+          const cartaoTelaX = tx + posMundo.x * k;
+          const cartaoTelaY = ty + posMundo.y * k;
           motion.magnet = passoMagnetismo(
             motion.magnet,
             cartaoTelaX,
@@ -236,7 +242,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     const vw = viewport.clientWidth || window.innerWidth;
     const vh = viewport.clientHeight || window.innerHeight;
     camRef.current = enquadrar(
-      pecas.map((p) => p.posicao),
+      pecas.map(posicaoMundo),
       vw,
       vh
     );
@@ -272,7 +278,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       const vh = viewport.clientHeight;
       const alvoPecas = grupo ? pecasPorGrupo(grupo) : pecas;
       const alvo = enquadrar(
-        alvoPecas.map((p) => p.posicao),
+        alvoPecas.map(posicaoMundo),
         vw,
         vh
       );
@@ -342,7 +348,8 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       const viewport = viewportRef.current;
       if (!peca || !viewport) return;
       cameraTweenRef.current?.kill();
-      const alvo: Camera = { x: peca.posicao.x, y: peca.posicao.y, k: camRef.current.k };
+      const posMundo = posicaoMundo(peca);
+      const alvo: Camera = { x: posMundo.x, y: posMundo.y, k: camRef.current.k };
       const gsap = gsapRef.current;
       if (reduzido || !gsap) {
         camRef.current = alvo;
@@ -592,15 +599,17 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
               <div
                 className={modo === "plano" ? "relative mt-4" : "mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2"}
               >
-                {pecasDoGrupo.map((p) => (
+                {pecasDoGrupo.map((p) => {
+                  const posMundo = posicaoMundo(p);
+                  return (
                   <div
                     key={p.slug}
                     className={modo === "plano" ? "absolute w-[240px]" : ""}
                     style={
                       modo === "plano" && pos
                         ? ({
-                            left: `${p.posicao.x - pos.x}px`,
-                            top: `${p.posicao.y - pos.y + 60}px`,
+                            left: `${posMundo.x - pos.x}px`,
+                            top: `${posMundo.y - pos.y}px`,
                           } as React.CSSProperties)
                         : undefined
                     }
@@ -613,7 +622,8 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
                       onAbrir={abrirCartao}
                     />
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );

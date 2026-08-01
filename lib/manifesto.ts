@@ -86,6 +86,20 @@ export const PECAS: Peca[] = [
   },
 ];
 
+/**
+ * As coordenadas do manifesto são unidades de mundo abstratas, não pixels
+ * literais — só a distância RELATIVA entre elas importa (o que decide quem
+ * fica perto de quem). Multiplicar por um fator fixo dá espaço real para o
+ * cartão de 240px sem overlap, preservando a vizinhança que foi escrita à
+ * mão. Sem isto, cardapio-planilha (x:120) e busca-por-aplicacao (x:330)
+ * ficam a 210 unidades um do outro — menos que a largura de um cartão.
+ */
+export const FATOR_ESCALA_MUNDO = 2;
+
+export function posicaoMundo(peca: Peca): { x: number; y: number } {
+  return { x: peca.posicao.x * FATOR_ESCALA_MUNDO, y: peca.posicao.y * FATOR_ESCALA_MUNDO };
+}
+
 export function pecasPorGrupo(grupo: Grupo): Peca[] {
   return PECAS.filter((p) => p.grupo === grupo);
 }
