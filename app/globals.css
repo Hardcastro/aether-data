@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+/*
+  Clay + glass, canvas claro — assinatura visual compartilhada com os
+  projetos 01, 02 e 03. Tokens vêm de ../../sistema-visual.md sem alteração.
+  Os dois únicos tokens novos desta peça (--canvas-repouso / --canvas-focado)
+  não substituem nada: --bg-mid, --bg-emerald e --bg-deep já existiam sem uso
+  claro e ganham um aqui.
+*/
+:root {
+  --bg-gradient: linear-gradient(140deg, #ffffff 0%, #f3faf7 55%, #e9f6f0 100%);
+  --bg-solid: #eef2f0;
+  --bg-deep: #0f172a;
+  --bg-mid: #134e4a;
+  --bg-emerald: #065f46;
+
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-blur: 16px;
+  --glass-ring: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --glass-lift: 0 8px 32px rgba(15, 23, 42, 0.1);
+
+  --glass-solid-bg: #ffffff;
+  --glass-solid-border: rgba(15, 23, 42, 0.08);
+
+  --clay-primary: #10b981;
+  --clay-primary-ink: #022c22;
+  --clay-surface: #134e4a;
+  --clay-surface-ink: #6ee7b7;
+
+  --clay-shadow: inset -3px -3px 7px rgba(2, 44, 34, 0.28),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.45), 6px 7px 18px rgba(15, 23, 42, 0.14);
+  --clay-shadow-active: inset 3px 3px 7px rgba(2, 44, 34, 0.3),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.3), 2px 3px 8px rgba(15, 23, 42, 0.12);
+
+  --text-primary: #0f172a;
+  --text-secondary: #065f46;
+  --text-muted: #475569;
+
+  --radius-control: 14px;
+  --radius-card: 20px;
+  --radius-panel: 28px;
+
+  /* Estados do canvas — seção 3 do prompt-claude-code-04. Repouso é o padrão. */
+  --canvas-repouso: linear-gradient(140deg, #ffffff 0%, #f3faf7 55%, #e9f6f0 100%);
+  --canvas-focado: radial-gradient(circle at 50% 45%, #134e4a 0%, #065f46 45%, #0f172a 100%);
+
+  --grupo-titulo-repouso: var(--text-secondary);
+  --grupo-titulo-focado: #6ee7b7;
+  --grupo-apoio-repouso: var(--text-muted);
+  --grupo-apoio-focado: rgba(209, 250, 229, 0.72);
+
+  --glass-bg-focado: rgba(255, 255, 255, 0.1);
+  --glass-border-focado: rgba(255, 255, 255, 0.22);
+  --glass-ring-focado: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --glass-lift-focado: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-mid: var(--bg-mid);
+  --color-bg-emerald: var(--bg-emerald);
+  --color-bg-solid: var(--bg-solid);
+
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-glass-solid-bg: var(--glass-solid-bg);
+  --color-glass-solid-border: var(--glass-solid-border);
+
+  --color-clay-primary: var(--clay-primary);
+  --color-clay-primary-ink: var(--clay-primary-ink);
+  --color-clay-surface: var(--clay-surface);
+  --color-clay-surface-ink: var(--clay-surface-ink);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+
+  --shadow-clay: var(--clay-shadow);
+  --shadow-clay-active: var(--clay-shadow-active);
+
+  --blur-glass: var(--glass-blur);
+
+  /* Escala tipográfica: 14 / 16 / 20 / 28 / 40 / 56 */
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.5;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-lead: 1.25rem;
+  --text-lead--line-height: 1.5;
+  --text-h3: 1.75rem;
+  --text-h3--line-height: 1.25;
+  --text-h2: 2.5rem;
+  --text-h2--line-height: 1.15;
+  --text-h1: 3.5rem;
+  --text-h1--line-height: 1.05;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--clay-primary);
+  outline-offset: 2px;
+}
+
+/* Skip link — fora da tela até receber foco */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 50;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+/*
+  O plano — escopo dos dois estados do canvas. data-canvas="focado" é
+  escrito por JS quando um grupo está enquadrado; a ausência do atributo
+  (SSR e modo lista) é sempre repouso.
+*/
+.plano-viewport {
+  --canvas-atual: var(--canvas-repouso);
+  --grupo-titulo-atual: var(--grupo-titulo-repouso);
+  --grupo-apoio-atual: var(--grupo-apoio-repouso);
+  --glass-bg-atual: var(--glass-bg);
+  --glass-border-atual: var(--glass-border);
+  --glass-ring-atual: var(--glass-ring);
+  --glass-lift-atual: var(--glass-lift);
+
+  background: var(--canvas-atual);
+}
+
+.plano-viewport[data-canvas="focado"] {
+  --canvas-atual: var(--canvas-focado);
+  --grupo-titulo-atual: var(--grupo-titulo-focado);
+  --grupo-apoio-atual: var(--grupo-apoio-focado);
+  --glass-bg-atual: var(--glass-bg-focado);
+  --glass-border-atual: var(--glass-border-focado);
+  --glass-ring-atual: var(--glass-ring-focado);
+  --glass-lift-atual: var(--glass-lift-focado);
+}
+
+.vidro {
+  background: var(--glass-bg-atual);
+  border: 1px solid var(--glass-border-atual);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-ring-atual), var(--glass-lift-atual);
+}
+
+.grupo-titulo {
+  color: var(--grupo-titulo-atual);
+}
+
+.grupo-apoio {
+  color: var(--grupo-apoio-atual);
+}
