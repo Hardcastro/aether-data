@@ -133,6 +133,24 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modo]);
 
+  /**
+   * Pinta a câmera atual (mundo + rótulo de zoom) fora do loop de rAF.
+   * O tick() cuida disso a cada frame quando está rodando; isto existe
+   * para os caminhos de "corte seco" (reduced-motion ou sem GSAP ainda
+   * carregado) não ficarem reféns de um primeiro/próximo frame de rAF que,
+   * numa aba sem foco real, pode demorar a chegar.
+   */
+  const pintarMundoAgora = useCallback(() => {
+    const viewport = viewportRef.current;
+    const mundo = mundoRef.current;
+    if (!viewport || !mundo) return;
+    const { tx, ty, k } = transformDoMundo(camRef.current, viewport.clientWidth, viewport.clientHeight);
+    mundo.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+    if (zoomLabelRef.current) {
+      zoomLabelRef.current.textContent = `${Math.round(k * 100)}%`;
+    }
+  }, []);
+
   const tick = useCallback(
     (agora: number) => {
       const viewport = viewportRef.current;
@@ -246,6 +264,15 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       vw,
       vh
     );
+    // Pinta já aqui, síncrono — não espera o primeiro rAF. Se o tab não
+    // estiver com foco real (aberto em segundo plano, por exemplo), o
+    // navegador atrasa/pausa requestAnimationFrame e o mundo ficaria com
+    // transform:none — cartão minúsculo no canto, sem o enquadramento que
+    // a seção 7 promete no primeiro frame.
+    pintarMundoAgora();
+    if (barraRef.current) {
+      barraRef.current.style.transform = "translate(-50%, 0)";
+    }
     ultimaAtividadeRef.current = performance.now();
     if (rafRef.current === null) {
       rafRef.current = requestAnimationFrame(tick);
@@ -289,6 +316,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       const gsap = gsapRef.current;
       if (reduzido || !gsap) {
         camRef.current = { ...alvo };
+        pintarMundoAgora();
       } else {
         mundoRef.current?.style.setProperty("will-change", "transform");
         cameraTweenRef.current = gsap.to(camRef.current, {
@@ -338,7 +366,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       }
       marcarAtividade();
     },
-    [modo, pecas, reduzido, marcarAtividade]
+    [modo, pecas, reduzido, marcarAtividade, pintarMundoAgora]
   );
 
   const focarCartao = useCallback(
@@ -353,6 +381,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       const gsap = gsapRef.current;
       if (reduzido || !gsap) {
         camRef.current = alvo;
+        pintarMundoAgora();
       } else {
         cameraTweenRef.current = gsap.to(camRef.current, {
           x: alvo.x,
@@ -364,7 +393,7 @@ export function Plano({ pecas, grupos, pecaAberta, contato }: Props) {
       }
       marcarAtividade();
     },
-    [modo, pecas, reduzido, marcarAtividade]
+    [modo, pecas, reduzido, marcarAtividade, pintarMundoAgora]
   );
 
   const suprimirCartao = useCallback((slug: string, ativo: boolean) => {
