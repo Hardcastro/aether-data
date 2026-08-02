@@ -17,7 +17,11 @@ const inter = Inter({
  */
 const instrument = Instrument_Serif({
   variable: "--font-instrument",
-  subsets: ["latin", "latin-ext"],
+  // Só "latin": todo acento do português (á ã ç é ê í ó õ ú) vive em Basic
+  // Latin + Latin-1 Supplement. "latin-ext" cobre o leste europeu, não faz
+  // falta aqui — e next/font derruba o BUILD, não o runtime, se a fonte não
+  // publicar o subconjunto pedido. Pedir a menos é grátis; pedir a mais não.
+  subsets: ["latin"],
   weight: "400",
   display: "swap",
 });
