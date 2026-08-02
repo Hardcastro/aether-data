@@ -1,11 +1,24 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Instrument_Serif } from "next/font/google";
 import { MARCA } from "@/site.config";
+import { Cabecalho } from "@/components/Cabecalho";
 import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+/**
+ * Display da peça. A referência usava Galada, que só traz latim básico e
+ * quebraria em "cardápio", "competência" e "próximo". Instrument Serif tem o
+ * mesmo peso editorial com o latim estendido completo.
+ */
+const instrument = Instrument_Serif({
+  variable: "--font-instrument",
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
   display: "swap",
 });
 
@@ -33,26 +46,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const temContato = Boolean(MARCA.email || MARCA.whatsapp);
-
   return (
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
-      <body className="relative flex min-h-full flex-col font-sans">
-        <a
-          href="#conteudo"
-          className="skip-link rounded-control bg-clay-primary px-4 py-2 text-body-sm font-medium text-clay-primary-ink shadow-clay"
-        >
+    <html lang="pt-BR" className={`${inter.variable} ${instrument.variable}`}>
+      <body>
+        <a href="#conteudo" className="skip-link">
           Pular para o conteúdo
         </a>
-        <main id="conteudo" className="flex-1">
-          {children}
-        </main>
-        {temContato && (
-          <footer className="border-t border-glass-solid-border px-6 py-4 text-body-sm text-text-muted">
-            {MARCA.whatsapp && <a href={`https://wa.me/${MARCA.whatsapp}`}>WhatsApp</a>}
-            {MARCA.email && <a href={`mailto:${MARCA.email}`}>{MARCA.email}</a>}
-          </footer>
-        )}
+        {/*
+          O cabeçalho é server component porque lê MARCA, que carrega
+          VERCEL_PROJECT_PRODUCTION_URL. Se ele virasse client, a variável não
+          existiria no bundle e os links de contato sumiriam sem erro de build.
+        */}
+        <Cabecalho email={MARCA.email} whatsapp={MARCA.whatsapp} />
+        {children}
       </body>
     </html>
   );

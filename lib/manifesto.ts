@@ -1,15 +1,39 @@
 export type Grupo = "puxa" | "entrega" | "consulta";
 
+/**
+ * Trio do gradiente radial de fundo. Cada peça pinta o mundo inteiro da sua
+ * cor quando está selecionada — é a troca de sabor da referência, aplicada a
+ * projeto em vez de produto. As duas peças de "puxa" ficam na mesma família
+ * fria de propósito: mesmo com um fundo por peça, o parentesco entre elas
+ * continua legível na transição.
+ */
+export type Cor = { inner: string; mid: string; outer: string };
+
 export type Peca = {
   slug: string;
   nome: string;
   capacidade: string;
   grupo: Grupo;
-  posicao: { x: number; y: number };
   url: string;
   repo?: string;
   stack: string[];
   oQueProva: string[];
+  cor: Cor;
+  /**
+   * Print do site rodando, servido de /public. Enquanto for null o painel
+   * desenha um espaço reservado com o nome da peça — nada quebra, só não tem
+   * imagem.
+   *
+   * Para ligar: capture a home em 1440x900, salve em public/prints/ com o
+   * nome do slug e troque null pelo caminho. Exemplo:
+   *
+   *   public/prints/cardapio-planilha.png  ->  imagem: "/prints/cardapio-planilha.png"
+   *
+   * A moldura do painel é 16/10 com object-fit: cover e alinhamento no topo,
+   * então qualquer captura mais alta que larga é cortada pela base e o
+   * cabeçalho do site continua visível. 1440x900 já está na proporção certa.
+   */
+  imagem: string | null;
 };
 
 export type GrupoInfo = {
@@ -47,7 +71,8 @@ export const PECAS: Peca[] = [
     nome: "Cardápio que o dono edita numa planilha",
     capacidade: "Dado ao vivo de planilha publicada em CSV, sem deploy a cada mudança",
     grupo: "puxa",
-    posicao: { x: 120, y: 160 },
+    cor: { inner: "#0b8a78", mid: "#044e3b", outer: "#011411" },
+    imagem: null,
     url: "https://restaurante-cardapio-planilha.vercel.app",
     repo: "https://github.com/Hardcastro/restaurante-cardapio-planilha",
     stack: ["Next.js", "Tailwind", "Vercel"],
@@ -61,7 +86,8 @@ export const PECAS: Peca[] = [
     nome: "Diga o carro, a peça certa aparece",
     capacidade: "Busca em cascata sobre catálogo real, com duas fontes atrás de uma interface só",
     grupo: "puxa",
-    posicao: { x: 330, y: 130 },
+    cor: { inner: "#0b4f8a", mid: "#04294e", outer: "#010c14" },
+    imagem: null,
     url: "https://distribuidora-autopecas.vercel.app",
     // Sem repo por enquanto — publicar-no-github.bat ainda não rodou.
     stack: ["Next.js", "Tailwind", "Vercel"],
@@ -75,7 +101,8 @@ export const PECAS: Peca[] = [
     nome: "Formulário que chega em quem precisa ler",
     capacidade: "Validação nas duas pontas, anti-spam e destino real — e falha honesta quando não dá para entregar",
     grupo: "entrega",
-    posicao: { x: 720, y: 150 },
+    cor: { inner: "#6d3a8a", mid: "#35194e", outer: "#0f0614" },
+    imagem: null,
     url: "https://contabilidade-institucional.vercel.app",
     repo: "https://github.com/Hardcastro/contabilidade-institucional",
     stack: ["Next.js", "Tailwind", "Resend", "Vercel"],
@@ -86,19 +113,8 @@ export const PECAS: Peca[] = [
   },
 ];
 
-/**
- * As coordenadas do manifesto são unidades de mundo abstratas, não pixels
- * literais — só a distância RELATIVA entre elas importa (o que decide quem
- * fica perto de quem). Multiplicar por um fator fixo dá espaço real para o
- * cartão de 240px sem overlap, preservando a vizinhança que foi escrita à
- * mão. Sem isto, cardapio-planilha (x:120) e busca-por-aplicacao (x:330)
- * ficam a 210 unidades um do outro — menos que a largura de um cartão.
- */
-export const FATOR_ESCALA_MUNDO = 2;
-
-export function posicaoMundo(peca: Peca): { x: number; y: number } {
-  return { x: peca.posicao.x * FATOR_ESCALA_MUNDO, y: peca.posicao.y * FATOR_ESCALA_MUNDO };
-}
+/** A peça que abre o site quando a URL não pede nenhuma. */
+export const PECA_PADRAO: Peca = PECAS[0];
 
 export function pecasPorGrupo(grupo: Grupo): Peca[] {
   return PECAS.filter((p) => p.grupo === grupo);

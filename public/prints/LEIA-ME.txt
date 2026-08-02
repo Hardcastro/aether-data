@@ -1,0 +1,15 @@
+Prints das peças — 1440x900, formato PNG ou JPG.
+
+Nomeie pelo slug do manifesto:
+
+  cardapio-planilha.png       <- https://restaurante-cardapio-planilha.vercel.app
+  busca-por-aplicacao.png     <- https://distribuidora-autopecas.vercel.app
+  formulario-que-entrega.png  <- https://contabilidade-institucional.vercel.app
+
+Depois, em lib/manifesto.ts, troque em cada peça:
+
+  imagem: null
+  imagem: "/prints/cardapio-planilha.png"
+
+A moldura é 16/10 com object-fit: cover alinhado ao topo — captura mais alta
+que larga é cortada pela base, e o cabeçalho do site continua aparecendo.
