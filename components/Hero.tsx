@@ -108,10 +108,16 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
       suave.y += (alvo.y - suave.y) * LERP_CURSOR;
 
       // O painel inclina em direção ao cursor e carrega o giro da troca.
-      // É o análogo do cameraOrbit da lata: mesma escala de 40deg / 20deg.
+      //
+      // A referência usa 40deg/20deg porque lá o objeto central é uma lata:
+      // girar uma lata 20 graus é o efeito inteiro. Aqui o objeto central é
+      // TEXTO — nome, capacidade, stack e botões. A 20 graus com perspectiva
+      // de 1400px a borda distante comprime e a leitura sofre, que é
+      // exatamente o defeito que derrubou a versão anterior desta peça.
+      // 12/8 mantém o painel vivo sob o cursor sem cobrar nada da leitura.
       if (painelRef.current) {
-        const rotY = suave.x * 40 + giroRef.current;
-        const rotX = -suave.y * 20;
+        const rotY = suave.x * 12 + giroRef.current;
+        const rotX = -suave.y * 8;
         painelRef.current.style.transform = `rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg)`;
       }
 

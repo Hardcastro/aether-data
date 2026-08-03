@@ -140,17 +140,24 @@ body {
   z-index: 0;
 }
 
+/*
+  Peso visual baixo de propósito. Na referência os objetos que flutuam são
+  cerejas 3D: opacos, coloridos, com silhueta própria — dá para atravessar a
+  tela com eles porque se leem como objetos. Aqui são esferas de vidro
+  brancas, e na opacidade que a referência usa elas viram névoa: a de 250px
+  cai justamente sobre o painel e apaga o texto que a peça existe para
+  mostrar. Fracas assim continuam dando profundidade e param de competir.
+*/
 .no {
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(
     circle at 32% 28%,
-    rgba(255, 255, 255, 0.55),
-    rgba(255, 255, 255, 0.08) 55%,
+    rgba(255, 255, 255, 0.16),
+    rgba(255, 255, 255, 0.03) 55%,
     transparent 72%
   );
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.07);
   pointer-events: none;
   will-change: transform;
 }
@@ -570,7 +577,13 @@ body {
   gap: 1.5rem;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  width: 135px;
+  /*
+    155px, não os 135px da referência: lá o rótulo é "Diet Classic", duas
+    palavras curtas. Aqui é "Cardápio que o dono edita numa planilha" — o
+    nome em português comum que o brief pediu — e a 135px ele quebra em
+    quatro linhas apertadas.
+  */
+  width: 155px;
   position: relative;
   backdrop-filter: blur(10px);
   text-align: center;
