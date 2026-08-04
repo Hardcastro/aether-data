@@ -1,3 +1,5 @@
+import { PECAS } from "@/lib/manifesto";
+
 /**
  * Nunca importar este módulo de um arquivo "use client" (nem de nada que um
  * client component importe). VERCEL_PROJECT_PRODUCTION_URL não existe no
@@ -7,8 +9,11 @@
 export const MARCA = {
   nome: "AEther Data",
   promessa: "Puxo dado de onde ele está e devolvo funcionando.",
-  descricao:
-    "Portfólio de automação de rotina com dado e sites que exibem esse dado — três peças no ar, agrupadas pela competência que carregam.",
+  // Conta as peças de lib/manifesto.ts em vez de escrever o número — a
+  // descrição usada no <meta name="description">, og:description e
+  // twitter:description ficou dizendo "três peças" com quatro no ar (SEO,
+  // 03/08). Contando, ela nunca mais destoa do painel.
+  descricao: `Portfólio de automação de rotina com dado e sites que exibem esse dado — ${PECAS.length} peças no ar, agrupadas pela competência que carregam.`,
   url: process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : "http://localhost:3000",

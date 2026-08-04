@@ -14,6 +14,14 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (!peca) {
     return {
       openGraph: { images: [`${MARCA.url}/opengraph-image`] },
+      // Sem isto, o twitter herdava só o card:"summary" do layout — sem
+      // imagem nenhuma. Era a única URL do site sem preview grande: quem
+      // compartilha justamente o link nu (o mais comum) caía no card pequeno
+      // enquanto qualquer link ?peca= já mostrava a imagem. SEO, 03/08.
+      twitter: {
+        card: "summary_large_image",
+        images: [`${MARCA.url}/opengraph-image`],
+      },
     };
   }
 
@@ -52,16 +60,18 @@ export default async function Home({ searchParams }: Props) {
     peça funcionando exatamente como antes, de graça.
   */
   const pecaAberta = (sp.peca ? pecaPorSlug(sp.peca) : undefined) ?? PECA_PADRAO;
-  const urlPagina = sp.peca ? new URL(`/?peca=${pecaAberta.slug}`, MARCA.url).toString() : null;
+  // Antes só existia quando sp.peca vinha na URL — a home nua (sem query),
+  // que é o link mais provável de circular, ficava sem canonical e sem
+  // og:url nenhum. Agora sempre aponta pra própria URL que está sendo servida.
+  // SEO, 03/08.
+  const urlPagina = sp.peca
+    ? new URL(`/?peca=${pecaAberta.slug}`, MARCA.url).toString()
+    : MARCA.url;
 
   return (
     <>
-      {urlPagina && (
-        <>
-          <link rel="canonical" href={urlPagina} />
-          <meta property="og:url" content={urlPagina} />
-        </>
-      )}
+      <link rel="canonical" href={urlPagina} />
+      <meta property="og:url" content={urlPagina} />
       {/*
         A cor inicial do gradiente vem do servidor, junto com o HTML. Sem isto
         a página abriria sempre no verde da peça padrão e daria um salto de cor
