@@ -111,6 +111,21 @@ export const PECAS: Peca[] = [
       "E o detalhe que quase nenhum formulário de site tem: quando a entrega não é possível, ele diz que falhou e mostra telefone e e-mail, em vez de responder \"enviado\" e deixar a pessoa esperando resposta que nunca vem.",
     ],
   },
+  {
+    slug: "indicadores-tempo-real",
+    nome: "Os números do Brasil, atualizados sozinhos",
+    capacidade: "Duas fontes públicas, de formatos incompatíveis, atrás de uma interface só — e a página fica em pé quando uma cai",
+    grupo: "consulta",
+    cor: { inner: "#8a6a0b", mid: "#4e3a04", outer: "#141001" },
+    imagem: "/prints/indicadores-tempo-real.png",
+    url: "https://indicadores-brasil-tempo-real.vercel.app",
+    repo: "https://github.com/Hardcastro/indicadores-brasil-tempo-real",
+    stack: ["Next.js", "Tailwind", "Vercel"],
+    oQueProva: [
+      "Duas fontes públicas — BCB e IBGE — cada uma com formato de erro e regra de limite diferente, atrás de uma interface só. As cinco séries chegam por Promise.allSettled: quando uma cai, as outras quatro continuam no ar em vez de derrubar a página inteira.",
+      "É a única peça do conjunto que pode quebrar sozinha depois de publicada — as outras usam dado que eu controlo, esta depende de fonte de terceiro. Por isso existe um fallback versionado: quando uma série falha — inclusive a armadilha que só apareceu em produção, o BCB devolvendo uma página de erro em HTML com HTTP 200 sob rajada — a página mostra o último dado bom em vez de quebrar.",
+    ],
+  },
 ];
 
 /** A peça que abre o site quando a URL não pede nenhuma. */
