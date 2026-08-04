@@ -358,8 +358,8 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
               Data
             </h1>
             <p className="descricao">
-              Puxo dado de onde ele está e devolvo funcionando. Três peças no ar,
-              agrupadas pela competência que carregam — não pelo ramo do cliente.
+              Puxo dado de onde ele está e devolvo funcionando. {pecas.length} peças
+              no ar, agrupadas pela competência que carregam — não pelo ramo do cliente.
             </p>
             <div className="cta-group">
               <a className="primary-btn" href={pecaExibida.url} target="_blank" rel="noreferrer">
@@ -391,7 +391,7 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
                 </svg>
               </div>
               <div className="selo-texto">
-                <span className="selo-titulo">TRÊS PEÇAS NO AR</span>
+                <span className="selo-titulo">{pecas.length} PEÇAS NO AR</span>
                 <span className="selo-subtitulo">Cresce por commit, sem vaga vazia</span>
               </div>
             </div>
