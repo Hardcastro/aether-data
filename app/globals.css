@@ -663,6 +663,201 @@ body {
   max-width: 100%;
 }
 
+/* --------------------------------------------- rotas de ferramenta (/calculadora…) */
+
+/*
+  A vitrine é uma tela só: `body` está preso em height 100vh e overflow hidden,
+  o que é certo para o hero e fatal para uma rota que rola. Em vez de afrouxar
+  a regra global — que derrubaria o enquadramento do hero em telas baixas —
+  a trava é solta só quando a página contém uma ferramenta.
+
+  `:has()` é o que permite isso sem tocar no layout raiz nem marcar o body por
+  script. Se um navegador antigo ignorar o seletor, a página não some: ela fica
+  presa em uma tela, que é degradação feia mas não quebrada.
+*/
+body:has(.ferramenta) {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+}
+
+.ferramenta {
+  position: relative;
+  z-index: 100;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 9rem 6% 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ferramenta-grupo {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.6rem;
+}
+
+.ferramenta-titulo {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  margin-bottom: 0.9rem;
+}
+
+.ferramenta-linha {
+  color: var(--muted-color);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  max-width: 34rem;
+}
+
+.ferramenta-pe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  color: var(--muted-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 2rem;
+}
+
+/* painel de vidro da ferramenta */
+
+.calc {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.calc-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1.25rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.campo label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.campo input {
+  font-family: var(--font-main);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 0.7rem 0.9rem;
+  width: 100%;
+  /* O spinner nativo some: ele rouba largura e não ajuda em nada aqui. */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.campo input::-webkit-outer-spin-button,
+.campo input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.campo-apoio {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.calc-saida {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.calc-rotulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.calc-total {
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 9vw, 4.2rem);
+  line-height: 1.1;
+  margin: 0.3rem 0;
+}
+.calc-ano {
+  font-size: 0.86rem;
+  color: var(--muted-color);
+}
+
+.calc-formula {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+}
+.calc-formula-titulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.calc-formula-linha strong {
+  color: var(--text-color);
+  font-weight: 600;
+}
+.calc-formula-nota {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.3rem;
+}
+
+.calc-reset {
+  align-self: flex-start;
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted-color);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 100px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.calc-reset:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+}
+
+@media (max-width: 640px) {
+  .ferramenta {
+    padding-top: 7.5rem;
+  }
+  .calc {
+    padding: 1.4rem;
+    border-radius: 22px;
+  }
+}
+
 /* --------------------------------------------------------------- sem script */
 
 /*

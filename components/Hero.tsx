@@ -362,8 +362,19 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
               no ar, agrupadas pela competência que carregam — não pelo ramo do cliente.
             </p>
             <div className="cta-group">
-              <a className="primary-btn" href={pecaExibida.url} target="_blank" rel="noreferrer">
-                Ver no ar
+              {/*
+                Peça interna mora numa rota deste mesmo site (/calculadora…):
+                abrir aba nova para ir de uma página do site a outra é ruído,
+                e leva o visitante a acumular abas do mesmo domínio. Só peça
+                externa — projeto próprio na Vercel — abre fora.
+              */}
+              <a
+                className="primary-btn"
+                href={pecaExibida.url}
+                target={pecaExibida.interna ? undefined : "_blank"}
+                rel={pecaExibida.interna ? undefined : "noreferrer"}
+              >
+                {pecaExibida.interna ? "Usar agora" : "Ver no ar"}
                 <span className="plus-icon" aria-hidden="true">
                   +
                 </span>
@@ -423,10 +434,10 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
                     <a
                       className="btn-primario"
                       href={pecaExibida.url}
-                      target="_blank"
-                      rel="noreferrer"
+                      target={pecaExibida.interna ? undefined : "_blank"}
+                      rel={pecaExibida.interna ? undefined : "noreferrer"}
                     >
-                      Ver no ar ↗
+                      {pecaExibida.interna ? "Usar agora →" : "Ver no ar ↗"}
                     </a>
                     {pecaExibida.repo && (
                       <a

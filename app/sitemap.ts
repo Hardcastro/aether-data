@@ -23,5 +23,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
+    /*
+      As peças internas (06/08) têm rota de verdade além do cartão na vitrine —
+      /calculadora e, depois, /chat, /leitura, /resumo-semanal. Cada uma tem
+      metadata e canonical próprios, então cada uma é página indexável por si,
+      não só uma variação de ?peca=. Prioridade acima das variações da home
+      porque é a URL que circula em proposta.
+    */
+    ...PECAS.filter((peca) => peca.interna).map((peca) => ({
+      url: `${MARCA.url}${peca.url}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
   ];
 }

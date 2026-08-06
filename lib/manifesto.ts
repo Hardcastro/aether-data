@@ -1,4 +1,4 @@
-export type Grupo = "puxa" | "entrega" | "consulta";
+export type Grupo = "puxa" | "entrega" | "consulta" | "responde";
 
 /**
  * Trio do gradiente radial de fundo. Cada peça pinta o mundo inteiro da sua
@@ -15,6 +15,17 @@ export type Peca = {
   capacidade: string;
   grupo: Grupo;
   url: string;
+  /**
+   * Peça que mora dentro deste próprio site, em rota própria (/calculadora,
+   * /chat...), em vez de num projeto separado na Vercel. Muda duas coisas e
+   * nada mais: `url` é caminho relativo, e os links para ela não abrem em aba
+   * nova — mandar o visitante para outra aba dentro do mesmo site é ruído.
+   *
+   * Decisão de 06/08: as peças de ponto de contato ganharam rota própria
+   * justamente para caberem aqui com url e print, como todas as outras.
+   * Ver plano-portfolio.md, "Alinhamento das peças de contato — 06/08".
+   */
+  interna?: boolean;
   repo?: string;
   stack: string[];
   oQueProva: string[];
@@ -62,6 +73,21 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     chave: "consulta",
     titulo: "Deixa consultável",
     apoio: "Painel, busca, agenda",
+  },
+  /*
+    Grupo novo, 06/08. As quatro peças de ponto de contato (calculadora, chat,
+    leitura por e-mail, resumo semanal) têm em comum uma capacidade que os três
+    grupos antigos não descrevem: responder sem ninguém do outro lado. Elas não
+    puxam dado de fonte alheia, não entregam para um destinatário combinado
+    antes, e não deixam um acervo consultável — reagem a quem chegou agora.
+
+    O nome é capacidade, não seção de site, para não furar o eixo declarado do
+    plano ("capacidade, não negócio").
+  */
+  responde: {
+    chave: "responde",
+    titulo: "Responde sozinho",
+    apoio: "Cálculo na hora, conversa, leitura automática",
   },
 };
 
@@ -124,6 +150,25 @@ export const PECAS: Peca[] = [
     oQueProva: [
       "Duas fontes públicas — BCB e IBGE — cada uma com formato de erro e regra de limite diferente, atrás de uma interface só. As cinco séries chegam por Promise.allSettled: quando uma cai, as outras quatro continuam no ar em vez de derrubar a página inteira.",
       "É a única peça do conjunto que pode quebrar sozinha depois de publicada — as outras usam dado que eu controlo, esta depende de fonte de terceiro. Por isso existe um fallback versionado: quando uma série falha — inclusive a armadilha que só apareceu em produção, o BCB devolvendo uma página de erro em HTML com HTTP 200 sob rajada — a página mostra o último dado bom em vez de quebrar.",
+    ],
+  },
+  {
+    slug: "calculadora-custo",
+    nome: "Quanto custa o que você faz na mão",
+    capacidade:
+      "Três perguntas e a conta aberta na tela — cada fator editável, o número muda enquanto se digita",
+    grupo: "responde",
+    // Rosa profundo: a quinta família de cor, longe do teal e do azul de
+    // "puxa", do roxo de "entrega" e do âmbar de "consulta".
+    cor: { inner: "#8a0b4f", mid: "#4e042a", outer: "#14010a" },
+    imagem: null,
+    url: "/calculadora",
+    interna: true,
+    repo: "https://github.com/Hardcastro/aether-data",
+    stack: ["Next.js", "Sem servidor", "Vercel"],
+    oQueProva: [
+      "Quem chega cético em automação fica mais cético diante de um número sem explicação — então a conta não fica escondida atrás do resultado. Os três fatores aparecem na tela, editáveis, e o total se refaz a cada tecla. Dá para discordar de um fator específico e ver o número mudar, em vez de aceitar ou desconfiar do resultado inteiro.",
+      "E ela é a peça que prova que nem toda automação precisa de modelo de linguagem para ser útil: o cálculo inteiro acontece no navegador, sem chamada de servidor, sem chave de API e sem custo por uso. Funciona igual com a rede caindo depois que a página abriu.",
     ],
   },
 ];
