@@ -952,6 +952,347 @@ body:has(.ferramenta) {
   color: var(--text-color);
 }
 
+/* ------------------------------------------------- nota fiscal → planilha */
+
+/*
+  brief-12. A rota de ferramenta nasceu com 46rem, medida certa para três
+  campos e um número grande. Esta peça produz uma planilha, e planilha
+  espremida em 46rem vira rolagem lateral logo na terceira coluna — a largura
+  é o modificador, não uma segunda moldura.
+*/
+/*
+  74rem, e o número é medido, não escolhido: a tabela de oito colunas pede 915px
+  e o `padding: 9rem 6%` da .ferramenta resolve os 6% contra a largura do body
+  (1440 numa tela comum), não contra a própria caixa — some 173px antes de
+  qualquer conteúdo, mais 64px do respiro da .nf. Com 64rem sobravam 783px e a
+  coluna de valor, que é a que a pessoa veio ver, nascia fora da área visível.
+
+  Abaixo de ~1050px de viewport a conta deixa de fechar e a rolagem lateral do
+  .nf-tabela-rolo assume. Isso é degradação prevista, não descuido: a alternativa
+  seria esconder colunas, e esconder o valor é pior que rolar até ele.
+*/
+.ferramenta-larga {
+  max-width: 74rem;
+}
+
+.nf {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.nf-aviso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted-color);
+  border-left: 2px solid var(--accent);
+  padding-left: 1rem;
+}
+.nf-aviso strong {
+  color: var(--text-color);
+}
+
+.nf-solta {
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.22);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.nf-solta.arrastando {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/*
+  Escondido para o olho, presente para o teclado e para o leitor de tela.
+  `display:none` e `visibility:hidden` tirariam o campo da ordem de foco, e a
+  área de arrastar deixaria de ter qualquer caminho por teclado — que é
+  exatamente a falha que o critério de pronto cobra.
+*/
+.nf-entrada {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.nf-rotulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.6rem 1.5rem;
+  cursor: pointer;
+  text-align: center;
+}
+.nf-entrada:focus-visible + .nf-rotulo {
+  outline: 2px solid var(--accent);
+  outline-offset: -6px;
+  border-radius: 20px;
+}
+.nf-entrada:disabled + .nf-rotulo {
+  cursor: progress;
+  opacity: 0.55;
+}
+.nf-rotulo-forte {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.nf-rotulo-fraco {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.nf-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.nf-vivo:empty {
+  display: none;
+}
+.nf-progresso {
+  font-size: 0.86rem;
+  color: var(--muted-color);
+}
+.nf-progresso strong {
+  color: var(--text-color);
+}
+
+.nf-resumo {
+  font-size: 0.92rem;
+  color: var(--muted-color);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--glass-border);
+}
+.nf-resumo strong {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.nf-recusas {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+}
+.nf-recusas strong {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.nf-tabela-rolo {
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+.nf-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+.nf-legenda {
+  caption-side: bottom;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: normal;
+}
+.nf-legenda strong {
+  color: var(--muted-color);
+}
+.nf-tabela th {
+  text-align: left;
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+  font-weight: 600;
+  padding: 0.7rem 0.85rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--glass-border);
+}
+.nf-tabela td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  vertical-align: top;
+}
+.nf-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+.nf-tabela .num,
+.nf-itens .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  A linha que veio de imagem é levemente destacada do fundo. Não é decoração:
+  é a mesma informação da coluna `origem`, repetida num canal que não depende
+  de ler a primeira coluna. A cor sozinha nunca carrega o dado — o texto do
+  selo está lá, e é ele que vale.
+*/
+.nf-tabela tr.de-imagem td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nf-origem {
+  display: inline-block;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 100px;
+  border: 1px solid currentColor;
+}
+.nf-origem.xml {
+  color: rgba(255, 255, 255, 0.65);
+}
+.nf-origem.imagem {
+  color: var(--accent);
+}
+
+/*
+  Razão social é o único campo de tamanho imprevisível da tabela, e com
+  `white-space: nowrap` era ele que empurrava a coluna Total para fora da área
+  visível — justamente a coluna que a pessoa veio ver. Cortar com reticências
+  aqui devolve as duas colunas da direita sem tirar o dado: o valor inteiro
+  continua no `title` e no CSV.
+*/
+.nf-tabela .col-nome > .nome {
+  display: block;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nf-tabela td.duvida {
+  background: rgba(251, 207, 232, 0.1);
+}
+.nf-marca {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+/* A mesma marca citada dentro de uma frase, onde `display:block` a jogaria
+   para uma linha só dela e quebraria a leitura da legenda. */
+.nf-marca-inline {
+  display: inline;
+  margin: 0;
+  font-size: 0.72em;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+}
+.nf-vazio {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.nf-abrir {
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-color);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 100px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+}
+.nf-abrir:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nf-detalhe td {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+  white-space: normal;
+}
+.nf-alerta {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--accent);
+  margin-bottom: 0.7rem;
+}
+.nf-itens {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.nf-itens th {
+  text-align: left;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+}
+.nf-itens td {
+  padding: 0.35rem 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.nf-exportar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+/*
+  `.btn-primario` e `.btn-secundario` nasceram no Hero para <a>, então nunca
+  zeraram fundo, borda e fonte — num <a> não existe nada disso para zerar. No
+  <button> o navegador repõe os três: o secundário aparecia com o cinza nativo
+  de botão e os dois com a fonte do sistema. Esta é a primeira vez que as
+  classes são usadas em botão de verdade.
+*/
+.nf-exportar button {
+  font-family: var(--font-main);
+  cursor: pointer;
+}
+.nf-exportar button.btn-primario {
+  border: none;
+}
+.nf-exportar button.btn-secundario {
+  background: transparent;
+}
+.nf-exportar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.nf-nota-csv {
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.5);
+}
+.nf-nota-csv code {
+  font-size: 0.9em;
+  color: var(--muted-color);
+}
+
 @media (max-width: 640px) {
   .ferramenta {
     padding-top: 7.5rem;
@@ -959,6 +1300,16 @@ body:has(.ferramenta) {
   .calc {
     padding: 1.4rem;
     border-radius: 22px;
+  }
+  .nf {
+    padding: 1.4rem;
+    border-radius: 22px;
+  }
+  .nf-rotulo {
+    padding: 2rem 1rem;
+  }
+  .nf-exportar button {
+    width: 100%;
   }
 }
 

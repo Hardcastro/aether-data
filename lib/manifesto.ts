@@ -219,6 +219,29 @@ export const PECAS: Peca[] = [
     ],
   },
   {
+    slug: "nota-fiscal-planilha",
+    nome: "A nota fiscal vira linha de planilha",
+    capacidade:
+      "XML de NF-e lido no navegador e foto de nota transcrita por modelo de visão — com a origem de cada linha declarada",
+    grupo: "puxa",
+    // Primeira automação do grupo `puxa`: até 07/08 o grupo era só de sites. O
+    // apoio dele sempre disse "documento" e a vaga nunca tinha sido ocupada.
+    tipo: "automacao",
+    // Azul-violeta. As cinco peças anteriores ocupam os matizes 46, 171, 206,
+    // 281 e 326; as duas vertentes, 108 e 6. A maior lacuna que sobra é
+    // 206→281, e este tom cai no meio dela.
+    cor: { inner: "#1e0b8a", mid: "#10044e", outer: "#040114" },
+    imagem: "/prints/nota-fiscal-planilha.png",
+    url: "/nota-fiscal",
+    interna: true,
+    repo: "https://github.com/Hardcastro/aether-data",
+    stack: ["Next.js", "DOMParser", "Claude (visão)", "pdf.js"],
+    oQueProva: [
+      "Duas vias para o mesmo resultado, e a diferença entre elas é a peça. O XML da NF-e é lido aqui no navegador e não sobe: os campos já vêm nomeados no arquivo, então ler é trabalho de leitor de XML, não de inteligência. A foto do cupom amassado sobe, porque uma figura não tem campo nomeado e alguma coisa precisa olhar. Quem entende por que um sobe e o outro não entendeu a diferença entre dado estruturado e dado que só parece estruturado.",
+      "E toda linha carrega de onde veio — na tela e dentro do CSV. Linha de XML é documento fiscal; linha de imagem é palpite bem-informado, com os campos que o modelo não conseguiu ler marcados um a um como \"confira\" em vez de preenchidos com algo plausível. Misturar as duas em silêncio é como um número transcrito errado entra na contabilidade de alguém, e é o que quase toda ferramenta parecida faz.",
+    ],
+  },
+  {
     slug: "calculadora-custo",
     nome: "Quanto custa o que você faz na mão",
     capacidade:
