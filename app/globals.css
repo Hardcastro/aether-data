@@ -748,16 +748,29 @@ body:has(.ferramenta) {
   gap: 1.25rem;
 }
 
-.campo {
+/*
+  .calc-campo, não .campo: o Hero já usa `.campo` (+ .campo-fg/.campo-bg) para
+  o campo de partículas de fundo — position:absolute, inset:0, pointer-events:
+  none. Mesmo nome, mesma especificidade (0,1,0): o cascade não troca uma regra
+  pela outra, funde as duas, e as propriedades que esta classe nunca menciona
+  (position, inset) continuam valendo por baixo. Resultado: os três campos do
+  formulário viravam absolutos e inset:0 dentro de `.ferramenta` (a primeira
+  ancestral com position:relative), empilhados exatamente um sobre o outro.
+  Um nome próprio resolve, e resolve de quebra a regra de
+  prefers-reduced-motion logo abaixo, que também mirava `.campo` e apagava a
+  calculadora inteira — não só o campo de partículas — para quem pede menos
+  movimento.
+*/
+.calc-campo {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
-.campo label {
+.calc-campo label {
   font-size: 0.82rem;
   font-weight: 600;
 }
-.campo input {
+.calc-campo input {
   font-family: var(--font-main);
   font-size: 1.35rem;
   font-weight: 600;
@@ -771,8 +784,8 @@ body:has(.ferramenta) {
   appearance: textfield;
   -moz-appearance: textfield;
 }
-.campo input::-webkit-outer-spin-button,
-.campo input::-webkit-inner-spin-button {
+.calc-campo input::-webkit-outer-spin-button,
+.calc-campo input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }

@@ -92,7 +92,7 @@ export function Calculadora() {
   return (
     <div className="calc">
       <div className="calc-campos">
-        <div className="campo">
+        <div className="calc-campo">
           <label htmlFor={idVezes}>Quantas vezes por semana</label>
           <input
             id={idVezes}
@@ -106,7 +106,7 @@ export function Calculadora() {
           <span className="campo-apoio">esse processo se repete</span>
         </div>
 
-        <div className="campo">
+        <div className="calc-campo">
           <label htmlFor={idMinutos}>Quantos minutos cada vez</label>
           <input
             id={idMinutos}
@@ -120,7 +120,7 @@ export function Calculadora() {
           <span className="campo-apoio">do começo ao fim, contando a conferência</span>
         </div>
 
-        <div className="campo">
+        <div className="calc-campo">
           <label htmlFor={idValor}>Valor da hora de quem faz</label>
           <input
             id={idValor}

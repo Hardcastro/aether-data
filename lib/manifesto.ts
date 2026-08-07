@@ -161,7 +161,7 @@ export const PECAS: Peca[] = [
     // Rosa profundo: a quinta família de cor, longe do teal e do azul de
     // "puxa", do roxo de "entrega" e do âmbar de "consulta".
     cor: { inner: "#8a0b4f", mid: "#4e042a", outer: "#14010a" },
-    imagem: null,
+    imagem: "/prints/calculadora-custo.png",
     url: "/calculadora",
     interna: true,
     repo: "https://github.com/Hardcastro/aether-data",
