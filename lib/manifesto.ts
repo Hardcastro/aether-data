@@ -1,6 +1,20 @@
 export type Grupo = "puxa" | "entrega" | "consulta" | "responde";
 
 /**
+ * O corte de 07/08: o visitante escolhe primeiro pelo que ele sabe sobre si
+ * mesmo — "preciso de um site" ou "preciso automatizar isso" — e só depois
+ * encontra a competência. Competência continua sendo o eixo do portfólio; ela
+ * só deixou de ser a porta de entrada, porque é vocabulário nosso e não dele.
+ *
+ * O mapeamento é o mesmo do `plano-portfolio.md`: S1–S4 são `site`, C1–C4 são
+ * `automacao`. Não confundir com `interna` — hoje as duas listas coincidem,
+ * mas `interna` responde "onde a peça mora" (rota daqui ou projeto na Vercel) e
+ * `tipo` responde "o que a peça é". Uma automação hospedada fora continuaria
+ * `automacao` com `interna: false`.
+ */
+export type Tipo = "site" | "automacao";
+
+/**
  * Trio do gradiente radial de fundo. Cada peça pinta o mundo inteiro da sua
  * cor quando está selecionada — é a troca de sabor da referência, aplicada a
  * projeto em vez de produto. As duas peças de "puxa" ficam na mesma família
@@ -14,6 +28,7 @@ export type Peca = {
   nome: string;
   capacidade: string;
   grupo: Grupo;
+  tipo: Tipo;
   url: string;
   /**
    * Peça que mora dentro deste próprio site, em rota própria (/calculadora,
@@ -51,6 +66,51 @@ export type GrupoInfo = {
   chave: Grupo;
   titulo: string;
   apoio: string;
+};
+
+export type TipoInfo = {
+  chave: Tipo;
+  /** Rota da vitrine desse tipo. É o prefixo que o Hero usa ao escrever ?peca=. */
+  rota: string;
+  /** Nome no menu, no seletor da home e no display da própria vitrine. */
+  titulo: string;
+  /** A linha em maiúscula acima do nome, no lugar que a peça usa para o grupo. */
+  etiqueta: string;
+  /** Uma linha, em português de dono de negócio — não em vocabulário de portfólio. */
+  chamada: string;
+  /**
+   * Cor da vertente. Duas famílias novas, e não empréstimo das peças, porque
+   * vertente é um nível acima de peça — pegar o verde do cardápio faria a home
+   * parecer que está mostrando o cardápio.
+   *
+   * A escolha não é de gosto: as cinco peças ocupam os matizes 46 (âmbar), 171
+   * (teal), 206 (azul), 281 (roxo) e 326 (vinho). As duas maiores lacunas do
+   * círculo são 46→171 e 326→46; estas duas cores caem no meio delas — verde em
+   * ~108 e vermelho em ~6. É a maior distância possível das cinco e uma da
+   * outra, o que importa porque na home elas aparecem lado a lado.
+   */
+  cor: Cor;
+};
+
+export const TIPOS: Record<Tipo, TipoInfo> = {
+  site: {
+    chave: "site",
+    rota: "/sites",
+    titulo: "Sites",
+    etiqueta: "Página que mostra dado",
+    chamada:
+      "Páginas que mostram dado que já existe no seu negócio, sem ninguém digitar nada duas vezes",
+    cor: { inner: "#3a8a0b", mid: "#1f4e04", outer: "#071401" },
+  },
+  automacao: {
+    chave: "automacao",
+    rota: "/automacoes",
+    titulo: "Automações",
+    etiqueta: "Ferramenta que roda sozinha",
+    chamada:
+      "Ferramentas que fazem sozinhas o que hoje alguém faz na mão — calcular, responder, avisar",
+    cor: { inner: "#8a1a0b", mid: "#4e0d04", outer: "#140301" },
+  },
 };
 
 /**
@@ -97,6 +157,7 @@ export const PECAS: Peca[] = [
     nome: "Cardápio que o dono edita numa planilha",
     capacidade: "Dado ao vivo de planilha publicada em CSV, sem deploy a cada mudança",
     grupo: "puxa",
+    tipo: "site",
     cor: { inner: "#0b8a78", mid: "#044e3b", outer: "#011411" },
     imagem: "/prints/cardapio-planilha.png",
     url: "https://restaurante-cardapio-planilha.vercel.app",
@@ -112,6 +173,7 @@ export const PECAS: Peca[] = [
     nome: "Diga o carro, a peça certa aparece",
     capacidade: "Busca em cascata sobre catálogo real, com duas fontes atrás de uma interface só",
     grupo: "puxa",
+    tipo: "site",
     cor: { inner: "#0b4f8a", mid: "#04294e", outer: "#010c14" },
     imagem: "/prints/busca-por-aplicacao.png",
     url: "https://distribuidora-autopecas.vercel.app",
@@ -127,6 +189,9 @@ export const PECAS: Peca[] = [
     nome: "Formulário que chega em quem precisa ler",
     capacidade: "Validação nas duas pontas, anti-spam e destino real — e falha honesta quando não dá para entregar",
     grupo: "entrega",
+    // Site, não automação: a peça publicada é o institucional da Meridiano
+    // Contabilidade (S1). O formulário é a competência que ele carrega.
+    tipo: "site",
     cor: { inner: "#6d3a8a", mid: "#35194e", outer: "#0f0614" },
     imagem: "/prints/formulario-que-entrega.png",
     url: "https://contabilidade-institucional.vercel.app",
@@ -142,6 +207,7 @@ export const PECAS: Peca[] = [
     nome: "Os números do Brasil, atualizados sozinhos",
     capacidade: "Duas fontes públicas, de formatos incompatíveis, atrás de uma interface só — e a página fica em pé quando uma cai",
     grupo: "consulta",
+    tipo: "site",
     cor: { inner: "#8a6a0b", mid: "#4e3a04", outer: "#141001" },
     imagem: "/prints/indicadores-tempo-real.png",
     url: "https://indicadores-brasil-tempo-real.vercel.app",
@@ -158,6 +224,11 @@ export const PECAS: Peca[] = [
     capacidade:
       "Três perguntas e a conta aberta na tela — cada fator editável, o número muda enquanto se digita",
     grupo: "responde",
+    // A C4 do plano — primeira das quatro peças de ponto de contato. É a única
+    // automação no ar hoje; C1 (/chat), C2 (/leitura) e C3 (/resumo-semanal)
+    // entram aqui conforme forem construídas, e a vitrine de automações
+    // preenche sozinha.
+    tipo: "automacao",
     // Rosa profundo: a quinta família de cor, longe do teal e do azul de
     // "puxa", do roxo de "entrega" e do âmbar de "consulta".
     cor: { inner: "#8a0b4f", mid: "#4e042a", outer: "#14010a" },
@@ -188,3 +259,32 @@ export function pecaPorSlug(slug: string): Peca | undefined {
 export const GRUPOS_COM_PECAS: GrupoInfo[] = (Object.keys(GRUPOS) as Grupo[])
   .map((chave) => GRUPOS[chave])
   .filter((g) => pecasPorGrupo(g.chave).length > 0);
+
+export function pecasPorTipo(tipo: Tipo): Peca[] {
+  return PECAS.filter((p) => p.tipo === tipo);
+}
+
+/** Rota de vitrine (`/sites`, `/automacoes`) → o tipo que ela mostra. */
+export function tipoPorRota(rota: string): TipoInfo | undefined {
+  return (Object.keys(TIPOS) as Tipo[]).map((t) => TIPOS[t]).find((t) => t.rota === rota);
+}
+
+/**
+ * Onde a peça mora agora que a vitrine se dividiu em duas. Um lugar só decide
+ * isso — se amanhã as rotas mudarem de nome, muda aqui e o site inteiro segue.
+ */
+export function rotaDaPeca(peca: Peca): string {
+  return `${TIPOS[peca.tipo].rota}?peca=${peca.slug}`;
+}
+
+/**
+ * Grupos com peça DENTRO de um tipo. A vitrine de automações não deve desenhar
+ * "Puxa dado de onde ele está" enquanto nenhuma automação carregar essa
+ * competência — é a mesma regra do vazio de GRUPOS_COM_PECAS, aplicada por
+ * tipo em vez de no conjunto inteiro.
+ */
+export function gruposComPecasDoTipo(tipo: Tipo): GrupoInfo[] {
+  return (Object.keys(GRUPOS) as Grupo[])
+    .map((chave) => GRUPOS[chave])
+    .filter((g) => PECAS.some((p) => p.tipo === tipo && p.grupo === g.chave));
+}

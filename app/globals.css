@@ -187,6 +187,7 @@ body {
   gap: 1rem;
 }
 
+/* Virou link para a home em 07/08, quando a home deixou de ser esta tela. */
 .logo {
   display: flex;
   align-items: center;
@@ -195,6 +196,8 @@ body {
   font-size: 1.4rem;
   font-family: var(--font-display);
   white-space: nowrap;
+  color: inherit;
+  text-decoration: none;
 }
 
 .nav {
@@ -223,8 +226,13 @@ body {
   cursor: pointer;
   white-space: nowrap;
 }
+/*
+  `[aria-current]` sem valor: a barra deixou de ser filtro e virou navegação em
+  07/08, e o valor correto passou de "true" para "page". Casar pelo atributo,
+  não pelo valor, sobrevive à próxima troca desse tipo.
+*/
 .nav-item:hover,
-.nav-item[aria-current="true"] {
+.nav-item[aria-current] {
   background: var(--accent);
   color: var(--accent-ink);
 }
@@ -280,6 +288,21 @@ body {
   line-height: 0.85;
   white-space: nowrap;
 }
+
+/*
+  Título de uma linha só — "Sites", "Automações" — contra o de duas da home
+  ("AEther / Data").
+
+  Ele precisa de tamanho próprio porque `.hero-centro` é absoluto e o painel
+  passa por cima da coluna esquerda: sobram ~342px de largura livre antes da
+  borda do painel. Com `white-space: nowrap` no tamanho da home, "Automações"
+  (dez caracteres, sem espaço para quebrar) atravessava o painel inteiro.
+  5vw cabe na folga e mantém a mesma família e o mesmo peso — a tela continua
+  sendo a mesma, só o display se ajusta ao que a coluna comporta.
+*/
+.titulo-display-secao {
+  font-size: clamp(2.8rem, 5vw, 6rem);
+}
 .titulo-display .fina {
   color: rgba(255, 255, 255, 0.55);
 }
@@ -301,6 +324,27 @@ body {
   font-size: 1.05rem;
   line-height: 1.6;
   max-width: 400px;
+}
+
+/*
+  O teto em vw corrige uma colisão que existia desde antes de 07/08 e só
+  aparece numa faixa estreita de largura.
+
+  `.hero-centro` é absoluto (fora do fluxo), então o painel não empurra a
+  coluna esquerda — ele passa por cima. O painel mede `min(38rem, 42vw)`, e
+  abaixo de ~1448px o segundo termo vence e a borda esquerda dele anda para
+  dentro do texto: entre 1200px e ~1740px a descrição de 400px fixos ficava
+  por baixo do vidro.
+
+  `min-width: 1201px` é obrigatório aqui, e não detalhe. Sem ele a regra valia
+  também no celular, onde 23vw são 99px numa tela de 430 — a descrição virava
+  uma coluna de três palavras. Abaixo de 1200px o layout empilha e centraliza,
+  o painel deixa de sobrepor, e não existe colisão nenhuma para corrigir.
+*/
+@media (min-width: 1201px) {
+  .descricao {
+    max-width: min(400px, 23vw);
+  }
 }
 
 .cta-group {
@@ -444,6 +488,23 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: top center;
+  display: block;
+}
+
+/*
+  O mock desenhado das vertentes, na home. Ocupa a mesma moldura 16/10 que o
+  print de uma peça ocuparia — é o que faz a home e as vitrines lerem como a
+  mesma tela em vez de duas telas parecidas. `object-fit: cover` no print
+  corresponde a `preserveAspectRatio` padrão aqui: o SVG já nasce em 16/10.
+*/
+.mock {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.mock svg {
+  width: 100%;
+  height: 100%;
   display: block;
 }
 
@@ -661,6 +722,36 @@ body {
   font-size: clamp(2.5rem, 4.5vw, 5rem);
   line-height: 0.95;
   max-width: 100%;
+}
+
+/* ------------------------------------------------ prosa (/sobre, /contato) */
+
+.prosa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 36rem;
+}
+.prosa h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.6rem;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+.prosa p {
+  color: var(--muted-color);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.prosa a {
+  color: var(--accent);
+}
+.prosa-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.5rem;
 }
 
 /* --------------------------------------------- rotas de ferramenta (/calculadora…) */
@@ -890,6 +981,34 @@ body:has(.ferramenta) {
 
 /* --------------------------------------------------------------- responsivo */
 
+@media (max-width: 1000px) {
+  /*
+    A nav de 5 itens não cabe ao lado do logo e do botão de contato em tela
+    estreita. Ela desce para uma linha própria, com rolagem lateral em vez de
+    sumir: até 06/08 ela era filtro (dava para viver sem), agora é a única
+    forma de chegar em /sobre e /contato.
+  */
+  .header {
+    flex-wrap: wrap;
+    padding: 1.2rem 4%;
+    gap: 0.8rem;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+  /* A nav ocupa uma linha a mais aqui — as rotas de texto respiram junto. */
+  .ferramenta {
+    padding-top: 11rem;
+  }
+}
+
 @media (max-width: 1200px) {
   body {
     overflow: auto;
@@ -923,9 +1042,16 @@ body:has(.ferramenta) {
   .painel {
     width: min(34rem, 92vw);
   }
+  /*
+    Centralizar só dentro do hero. A regra era global enquanto o hero era a
+    única tela; na home nova ela centralizava o display e deixava os parágrafos
+    à esquerda logo abaixo — dois alinhamentos no mesmo bloco de texto.
+  */
+  .hero .titulo-display {
+    text-align: center;
+  }
   .titulo-display {
     font-size: clamp(3rem, 12vw, 5rem);
-    text-align: center;
   }
   .titulo-lado {
     align-self: center;
@@ -935,9 +1061,13 @@ body:has(.ferramenta) {
     margin-top: 1rem;
     justify-content: center;
   }
-  .nav {
-    display: none;
-  }
+  /*
+    `.nav { display: none }` vivia aqui e saiu em 07/08. Escondê-la era barato
+    enquanto ela era filtro de competência e a home mostrava tudo de qualquer
+    jeito; agora ela é a única forma de chegar em /sobre e /contato, e sumir no
+    celular deixaria duas das cinco rotas inalcançáveis. A regra de 1000px
+    acima faz ela caber, em vez de apagá-la.
+  */
   .seletor {
     align-items: center;
   }

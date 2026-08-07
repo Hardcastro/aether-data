@@ -57,9 +57,15 @@ export default function RootLayout({
           Pular para o conteúdo
         </a>
         {/*
-          O cabeçalho é server component porque lê MARCA, que carrega
-          VERCEL_PROJECT_PRODUCTION_URL. Se ele virasse client, a variável não
-          existiria no bundle e os links de contato sumiriam sem erro de build.
+          Desde 07/08 o cabeçalho é client component: ele precisa de
+          usePathname para marcar o item da rota atual. Isso continua seguro
+          para MARCA porque ele nunca importou o módulo — os dois campos que
+          usa chegam como props, resolvidos aqui no servidor, onde
+          VERCEL_PROJECT_PRODUCTION_URL existe de verdade.
+
+          A regra segue de pé e vale para qualquer componente novo: nada que
+          seja "use client" pode importar @/site.config. Se importar, `url`
+          vira localhost em produção sem erro nenhum no build.
         */}
         <Cabecalho email={MARCA.email} whatsapp={MARCA.whatsapp} />
         {children}

@@ -1,15 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Peca } from "@/lib/manifesto";
-import { GRUPOS } from "@/lib/manifesto";
+import type { ItemVitrine } from "@/lib/vitrine";
+import { Particulas } from "@/components/Particulas";
+import { MockVertente } from "@/components/MockVertente";
 
 type GsapInstance = typeof import("gsap")["gsap"];
 
 type Props = {
-  pecas: Peca[];
-  pecaAberta: Peca;
+  /**
+   * O que o seletor e as setas percorrem. Na home são as duas vertentes; em
+   * /sites e /automacoes são as peças daquela vertente. O Hero não sabe a
+   * diferença — quem traduz é lib/vitrine.ts — e é isso que faz as três telas
+   * serem literalmente a mesma tela.
+   */
+  itens: ItemVitrine[];
+  aberto: ItemVitrine;
+  /** Rota desta tela. É o prefixo que o seletor escreve antes de `?peca=`. */
+  base: string;
+  /** Display grande da coluna esquerda. Duas linhas na home ("AEther / Data"). */
+  titulo: { linha1: string; linha2?: string };
+  descricao: string;
+  selo: { titulo: string; subtitulo: string };
+  /** Acervo em texto corrido, para leitor de tela e buscador. Ver lib/vitrine.ts. */
+  semJs: string[];
   contato: { email: string | null; whatsapp: string | null };
 };
 
@@ -25,14 +41,13 @@ const FORCA_REPULSAO = -80;
 const LERP_REPULSAO = 0.1;
 const LERP_CURSOR = 0.05;
 
-export function Hero({ pecas, pecaAberta, contato }: Props) {
+export function Hero({ itens, aberto, base, titulo, descricao, selo, semJs, contato }: Props) {
   const router = useRouter();
-  const [pecaExibida, setPecaExibida] = useState<Peca>(pecaAberta);
+  const [exibido, setExibido] = useState<ItemVitrine>(aberto);
 
   const painelRef = useRef<HTMLDivElement | null>(null);
   const campoFgRef = useRef<HTMLDivElement | null>(null);
   const campoBgRef = useRef<HTMLDivElement | null>(null);
-  const particulasRef = useRef<HTMLDivElement | null>(null);
 
   const gsapRef = useRef<GsapInstance | null>(null);
   const trocandoRef = useRef(false);
@@ -53,8 +68,8 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
   */
   useEffect(() => {
     if (trocandoRef.current) return;
-    setPecaExibida(pecaAberta);
-  }, [pecaAberta]);
+    setExibido(aberto);
+  }, [aberto]);
 
   useEffect(() => {
     reduzidoRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -180,59 +195,30 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
     };
   }, []);
 
-  /* ------------------------------------------------- partículas subindo ---- */
-
-  useEffect(() => {
-    if (reduzidoRef.current) return;
-    const alvo = particulasRef.current;
-    if (!alvo) return;
-    const timers = new Set<ReturnType<typeof setTimeout>>();
-
-    const criar = () => {
-      const p = document.createElement("div");
-      p.className = "dado";
-      const tamanho = Math.random() * 20 + 10;
-      p.style.width = `${tamanho}px`;
-      p.style.height = `${tamanho}px`;
-      p.style.left = `${Math.random() * 100}%`;
-      p.style.bottom = "-50px";
-      p.style.opacity = String(Math.random() * 0.4 + 0.2);
-      const dur = Math.random() * 6 + 4;
-      p.style.animation = `subirDado ${dur}s linear forwards`;
-      alvo.appendChild(p);
-      const t = setTimeout(() => {
-        p.remove();
-        timers.delete(t);
-      }, dur * 1000);
-      timers.add(t);
-    };
-
-    const intervalo = setInterval(criar, 400);
-    return () => {
-      clearInterval(intervalo);
-      for (const t of timers) clearTimeout(t);
-      alvo.replaceChildren();
-    };
-  }, []);
+  /*
+    As partículas saíram daqui em 07/08 para <Particulas />: a home e as duas
+    grades também precisam delas, e o efeito nunca dependeu de nada do Hero.
+  */
 
   /* ---------------------------------------------------------- a troca ----- */
 
-  const trocarPeca = useCallback(
-    (peca: Peca) => {
-      if (trocandoRef.current || peca.slug === pecaExibida.slug) return;
+  const trocarItem = useCallback(
+    (item: ItemVitrine) => {
+      if (trocandoRef.current || item.slug === exibido.slug) return;
 
       // A URL é a fonte de verdade: escrever ?peca= é o que faz o link frio, o
       // preview por peça e o botão voltar continuarem funcionando de graça.
-      router.push(`/?peca=${peca.slug}`, { scroll: false });
+      // O prefixo vem de fora — a mesma coreografia serve as três telas.
+      router.push(`${base}?peca=${item.slug}`, { scroll: false });
 
       const gsap = gsapRef.current;
       if (reduzidoRef.current || !gsap) {
         // Corte seco: sem giro, sem implosão.
         const raiz = document.documentElement;
-        raiz.style.setProperty("--bg-inner", peca.cor.inner);
-        raiz.style.setProperty("--bg-mid", peca.cor.mid);
-        raiz.style.setProperty("--bg-outer", peca.cor.outer);
-        setPecaExibida(peca);
+        raiz.style.setProperty("--bg-inner", item.cor.inner);
+        raiz.style.setProperty("--bg-mid", item.cor.mid);
+        raiz.style.setProperty("--bg-outer", item.cor.outer);
+        setExibido(item);
         return;
       }
 
@@ -241,9 +227,9 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
       const nos = Array.from(document.querySelectorAll<HTMLElement>(".no"));
 
       gsap.to(raiz, {
-        "--bg-inner": peca.cor.inner,
-        "--bg-mid": peca.cor.mid,
-        "--bg-outer": peca.cor.outer,
+        "--bg-inner": item.cor.inner,
+        "--bg-mid": item.cor.mid,
+        "--bg-outer": item.cor.outer,
         duration: 1.5,
         ease: "power2.inOut",
       });
@@ -260,7 +246,7 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
           if (painelRef.current) painelRef.current.style.filter = `blur(${giro.blur}px)`;
         },
         onComplete: () => {
-          setPecaExibida(peca);
+          setExibido(item);
           gsap.to(giro, {
             val: 720,
             blur: 0,
@@ -328,20 +314,20 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
           });
       });
     },
-    [pecaExibida.slug, router]
+    [exibido.slug, router, base]
   );
 
-  const indiceAtual = pecas.findIndex((p) => p.slug === pecaExibida.slug);
+  const indiceAtual = itens.findIndex((i) => i.slug === exibido.slug);
   const irPara = (passo: number) => {
-    const prox = (indiceAtual + passo + pecas.length) % pecas.length;
-    trocarPeca(pecas[prox]);
+    const prox = (indiceAtual + passo + itens.length) % itens.length;
+    trocarItem(itens[prox]);
   };
 
   /* ------------------------------------------------------------ markup ---- */
 
   return (
     <>
-      <div id="particulas" ref={particulasRef} aria-hidden="true" />
+      <Particulas />
 
       <div className="campo campo-bg" ref={campoBgRef} aria-hidden="true">
         {NOS_FUNDO.map((n) => (
@@ -352,33 +338,49 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
       <main className="hero" id="conteudo">
         <div className="hero-content">
           <div className="hero-left">
-            <h1 className="titulo-display">
-              <span className="fina">AEther</span>
-              <br />
-              Data
+            {/*
+              Na home o display é a marca ("AEther / Data"); nas duas vitrines
+              é onde o visitante está ("Sites", "Automações"). Quem decide é
+              quem renderiza — o Hero só desenha.
+            */}
+            <h1 className={`titulo-display${titulo.linha2 ? "" : " titulo-display-secao"}`}>
+              {titulo.linha2 ? (
+                <>
+                  <span className="fina">{titulo.linha1}</span>
+                  <br />
+                  {titulo.linha2}
+                </>
+              ) : (
+                titulo.linha1
+              )}
             </h1>
-            <p className="descricao">
-              Puxo dado de onde ele está e devolvo funcionando. {pecas.length} peças
-              no ar, agrupadas pela competência que carregam — não pelo ramo do cliente.
-            </p>
+            <p className="descricao">{descricao}</p>
             <div className="cta-group">
               {/*
-                Peça interna mora numa rota deste mesmo site (/calculadora…):
-                abrir aba nova para ir de uma página do site a outra é ruído,
-                e leva o visitante a acumular abas do mesmo domínio. Só peça
-                externa — projeto próprio na Vercel — abre fora.
+                Link do Next quando o destino é uma rota daqui — leva a
+                navegação de cliente, que preserva a coreografia; <a> normal
+                quando é projeto externo na Vercel, que abre fora.
               */}
-              <a
-                className="primary-btn"
-                href={pecaExibida.url}
-                target={pecaExibida.interna ? undefined : "_blank"}
-                rel={pecaExibida.interna ? undefined : "noreferrer"}
-              >
-                {pecaExibida.interna ? "Usar agora" : "Ver no ar"}
-                <span className="plus-icon" aria-hidden="true">
-                  +
-                </span>
-              </a>
+              {exibido.acaoPrimaria.externo ? (
+                <a
+                  className="primary-btn"
+                  href={exibido.acaoPrimaria.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {exibido.acaoPrimaria.rotulo.replace(/\s*[↗→]\s*$/, "")}
+                  <span className="plus-icon" aria-hidden="true">
+                    +
+                  </span>
+                </a>
+              ) : (
+                <Link className="primary-btn" href={exibido.acaoPrimaria.href}>
+                  {exibido.acaoPrimaria.rotulo.replace(/\s*[↗→]\s*$/, "")}
+                  <span className="plus-icon" aria-hidden="true">
+                    +
+                  </span>
+                </Link>
+              )}
               {contato.whatsapp && (
                 <a className="contact-btn" href={`https://wa.me/${contato.whatsapp}`}>
                   WhatsApp
@@ -402,8 +404,13 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
                 </svg>
               </div>
               <div className="selo-texto">
-                <span className="selo-titulo">{pecas.length} PEÇAS NO AR</span>
-                <span className="selo-subtitulo">Cresce por commit, sem vaga vazia</span>
+                {/*
+                  Na home conta o conjunto inteiro; em cada vitrine conta só o
+                  que está ali. Número certo no lugar certo — quem decide é
+                  quem renderiza.
+                */}
+                <span className="selo-titulo">{selo.titulo}</span>
+                <span className="selo-subtitulo">{selo.subtitulo}</span>
               </div>
             </div>
           </div>
@@ -412,41 +419,55 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
             <div className="painel-orbita">
               <article className="painel" ref={painelRef}>
                 <figure className="painel-figura">
-                  {pecaExibida.imagem ? (
-                    <img src={pecaExibida.imagem} alt={`Tela do projeto ${pecaExibida.nome}`} />
+                  {/*
+                    Três estados, nesta ordem: peça com print mostra a tela de
+                    verdade; vertente mostra o mock desenhado (ela não tem uma
+                    tela — ela é o conjunto); peça sem print ainda mostra o
+                    espaço reservado, que é o estado honesto de "a capturar".
+                  */}
+                  {exibido.mock ? (
+                    <MockVertente tipo={exibido.mock} />
+                  ) : exibido.imagem ? (
+                    <img src={exibido.imagem} alt={`Tela do projeto ${exibido.nome}`} />
                   ) : (
                     <figcaption className="reservado">
-                      <span className="reservado-marca">{pecaExibida.nome}</span>
+                      <span className="reservado-marca">{exibido.nome}</span>
                       <span className="reservado-nota">print do site — a capturar</span>
                     </figcaption>
                   )}
                 </figure>
                 <div className="painel-corpo">
-                  <p className="painel-grupo">{GRUPOS[pecaExibida.grupo].titulo}</p>
-                  <h2 className="painel-nome">{pecaExibida.nome}</h2>
-                  <p className="painel-capacidade">{pecaExibida.capacidade}</p>
+                  <p className="painel-grupo">{exibido.etiqueta}</p>
+                  <h2 className="painel-nome">{exibido.nome}</h2>
+                  <p className="painel-capacidade">{exibido.capacidade}</p>
                   <ul className="painel-stack">
-                    {pecaExibida.stack.map((s) => (
-                      <li key={s}>{s}</li>
+                    {exibido.fichas.map((f) => (
+                      <li key={f}>{f}</li>
                     ))}
                   </ul>
                   <div className="painel-acoes">
-                    <a
-                      className="btn-primario"
-                      href={pecaExibida.url}
-                      target={pecaExibida.interna ? undefined : "_blank"}
-                      rel={pecaExibida.interna ? undefined : "noreferrer"}
-                    >
-                      {pecaExibida.interna ? "Usar agora →" : "Ver no ar ↗"}
-                    </a>
-                    {pecaExibida.repo && (
+                    {exibido.acaoPrimaria.externo ? (
                       <a
-                        className="btn-secundario"
-                        href={pecaExibida.repo}
+                        className="btn-primario"
+                        href={exibido.acaoPrimaria.href}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Ver código ↗
+                        {exibido.acaoPrimaria.rotulo}
+                      </a>
+                    ) : (
+                      <Link className="btn-primario" href={exibido.acaoPrimaria.href}>
+                        {exibido.acaoPrimaria.rotulo}
+                      </Link>
+                    )}
+                    {exibido.acaoSecundaria && (
+                      <a
+                        className="btn-secundario"
+                        href={exibido.acaoSecundaria.href}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {exibido.acaoSecundaria.rotulo}
                       </a>
                     )}
                   </div>
@@ -464,66 +485,74 @@ export function Hero({ pecas, pecaAberta, contato }: Props) {
           <div className="hero-right">
             <div className="seletor">
               <ul className="seletor-cartoes">
-                {pecas.map((p) => (
-                  <li key={p.slug}>
+                {itens.map((i) => (
+                  <li key={i.slug}>
                     <button
                       type="button"
                       className="cartao"
-                      aria-current={p.slug === pecaExibida.slug}
-                      onClick={() => trocarPeca(p)}
+                      aria-current={i.slug === exibido.slug}
+                      onClick={() => trocarItem(i)}
                     >
                       <span
                         className="cartao-disco"
                         aria-hidden="true"
                         style={{
-                          background: `radial-gradient(circle at 32% 28%, ${p.cor.inner}, ${p.cor.mid} 60%, ${p.cor.outer} 100%)`,
+                          background: `radial-gradient(circle at 32% 28%, ${i.cor.inner}, ${i.cor.mid} 60%, ${i.cor.outer} 100%)`,
                         }}
                       />
                       <span className="cartao-info">
-                        <span className="nome">{p.nome}</span>
-                        <span className="grupo">{GRUPOS[p.grupo].titulo}</span>
+                        <span className="nome">{i.nome}</span>
+                        <span className="grupo">{i.etiqueta}</span>
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="seletor-nav">
-                <button
-                  type="button"
-                  className="nav-arrow"
-                  aria-label="Projeto anterior"
-                  onClick={() => irPara(-1)}
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  className="nav-arrow"
-                  aria-label="Próximo projeto"
-                  onClick={() => irPara(1)}
-                >
-                  →
-                </button>
-              </div>
+              {/*
+                Com um item só as setas não têm para onde ir — girariam de volta
+                para ele mesmo, que é a definição de controle morto. Some
+                sozinho quando C1–C3 entrarem em /automacoes.
+              */}
+              {itens.length > 1 && (
+                <div className="seletor-nav">
+                  <button
+                    type="button"
+                    className="nav-arrow"
+                    aria-label="Anterior"
+                    onClick={() => irPara(-1)}
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    className="nav-arrow"
+                    aria-label="Próximo"
+                    onClick={() => irPara(1)}
+                  >
+                    →
+                  </button>
+                </div>
+              )}
             </div>
-            <h2 className="titulo-lado">{pecaExibida.nome}</h2>
+            <h2 className="titulo-lado">{exibido.nome}</h2>
           </div>
         </div>
       </main>
 
       {/*
-        As três peças em texto corrido, para leitor de tela, para o Google e
-        para quem abre o código-fonte. O painel mostra uma por vez; isto mostra
+        As peças em texto corrido, para leitor de tela, para o Google e para
+        quem abre o código-fonte. O painel mostra uma por vez; isto mostra
         todas, sempre, sem depender de script.
+
+        Na home a lista traz as cinco, mesmo a home falando de vertentes: quem
+        chega sem script — ou é um robô de busca — precisa encontrar o acervo
+        inteiro na primeira página, não só dois rótulos.
       */}
       <div className="lista-sem-js">
         <h2>Todas as peças</h2>
         <ul>
-          {pecas.map((p) => (
-            <li key={p.slug}>
-              <a href={p.url}>{p.nome}</a> — {p.capacidade}. {GRUPOS[p.grupo].titulo}.{" "}
-              {p.stack.join(", ")}. {p.oQueProva.join(" ")}
-            </li>
+          {semJs.map((linha) => (
+            <li key={linha}>{linha}</li>
           ))}
         </ul>
       </div>

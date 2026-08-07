@@ -1,4 +1,7 @@
-import { GRUPOS_COM_PECAS, PECAS, pecasPorGrupo } from "@/lib/manifesto";
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type Props = {
   email: string | null;
@@ -6,16 +9,31 @@ type Props = {
 };
 
 /**
- * Barra de vidro no topo. Os itens da navegação são os grupos que têm peça —
- * um grupo vazio nunca é desenhado, a mesma regra do manifesto. Cada um é um
- * link real para a primeira peça daquele grupo, então funciona sem script.
+ * Barra de vidro no topo. Até 06/08 ela era filtro de competência: cada item
+ * levava para a primeira peça de um grupo, e a home era a única página do site.
+ *
+ * Desde 07/08 é navegação de verdade, porque o site deixou de ser uma tela só.
+ * O eixo por competência não morreu — desceu um nível: vira prosa na home e
+ * título de seção dentro de /sites e /automacoes. O que ele nunca foi é
+ * vocabulário do visitante, e porta de entrada tem que falar a língua de quem
+ * chega. Ver `plano-portfolio.md`, "Por que o eixo por capacidade é melhor" —
+ * o eixo continua valendo para organizar as peças, só não para navegar.
  */
+const ITENS = [
+  { href: "/", rotulo: "Home" },
+  { href: "/automacoes", rotulo: "Automações" },
+  { href: "/sites", rotulo: "Sites" },
+  { href: "/sobre", rotulo: "Sobre mim" },
+  { href: "/contato", rotulo: "Contatos" },
+] as const;
+
 export function Cabecalho({ email, whatsapp }: Props) {
+  const pathname = usePathname();
   const contato = whatsapp ? `https://wa.me/${whatsapp}` : email ? `mailto:${email}` : null;
 
   return (
     <header className="header">
-      <div className="logo">
+      <Link className="logo" href="/">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.6" />
           <path
@@ -26,17 +44,26 @@ export function Cabecalho({ email, whatsapp }: Props) {
           />
         </svg>
         <span>AEther Data</span>
-      </div>
+      </Link>
 
-      <nav className="nav" aria-label="Competências">
-        <a className="nav-item" href={`/?peca=${PECAS[0].slug}`}>
-          Tudo
-        </a>
-        {GRUPOS_COM_PECAS.map((g) => (
-          <a key={g.chave} className="nav-item" href={`/?peca=${pecasPorGrupo(g.chave)[0].slug}`}>
-            {g.titulo}
-          </a>
-        ))}
+      <nav className="nav" aria-label="Navegação principal">
+        {ITENS.map((item) => {
+          /*
+            "/" só é atual em correspondência exata — senão a home ficaria
+            marcada em todas as rotas, porque toda rota começa com barra.
+          */
+          const atual = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              className="nav-item"
+              href={item.href}
+              aria-current={atual ? "page" : undefined}
+            >
+              {item.rotulo}
+            </Link>
+          );
+        })}
       </nav>
 
       {contato ? (
