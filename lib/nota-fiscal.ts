@@ -118,6 +118,35 @@ function dataEmissao(ide: Element | null): string | null {
   return m ? m[1] : bruto;
 }
 
+/**
+ * A chave de acesso confere com o próprio dígito verificador?
+ *
+ * Existe por um motivo medido, não teórico: no primeiro teste real da via de
+ * foto o modelo devolveu uma chave **plausível e errada** — a imagem tinha um
+ * dígito a mais, ele normalizou para 44 em silêncio e deixou `incertos` vazio.
+ * Pedir honestidade ao modelo funciona quando ele sabe que não sabe; não
+ * funciona quando ele acha que sabe.
+ *
+ * Isto não pede nada a ninguém. Os 43 primeiros dígitos determinam o 44º por
+ * módulo 11 com pesos 2..9 da direita para a esquerda — se a conta não fecha,
+ * pelo menos um dígito está errado, e a peça marca o campo sozinha.
+ *
+ * Não é o contrário: chave que fecha não é chave certa (dois erros podem se
+ * cancelar). É um crivo barato, não uma garantia.
+ */
+export function chaveConfere(chave: string | null): boolean {
+  if (!chave || !/^\d{44}$/.test(chave)) return false;
+  let soma = 0;
+  let peso = 2;
+  for (let i = 42; i >= 0; i -= 1) {
+    soma += Number(chave[i]) * peso;
+    peso = peso === 9 ? 2 : peso + 1;
+  }
+  const resto = soma % 11;
+  const dv = resto === 0 || resto === 1 ? 0 : 11 - resto;
+  return dv === Number(chave[43]);
+}
+
 export function formatarDoc(doc: string | null): string | null {
   if (!doc) return null;
   const d = doc.replace(/\D/g, "");
@@ -527,9 +556,19 @@ export function baixarCsv(conteudo: string, nome: string) {
  * é justamente o ponto.
  */
 export function somaConfere(n: Nota): boolean | null {
-  if (n.valorProdutos === null || n.itens.length === 0) return null;
+  if (n.itens.length === 0) return null;
+  /*
+    Cupom fiscal quase nunca declara um subtotal de produtos separado — foi o
+    que apareceu no primeiro teste real, e a conferência simplesmente não
+    disparava. Quando não há `vProd` e não há frete, o total é o subtotal, e aí
+    a comparação volta a valer. Com frete declarado a conta deixaria de fechar
+    por construção, então nesse caso o crivo se cala em vez de mentir.
+  */
+  const alvo =
+    n.valorProdutos ?? (!n.valorFrete ? n.valorTotal : null);
+  if (alvo === null) return null;
   const soma = n.itens.reduce((t, i) => t + (i.valorTotal ?? 0), 0);
-  return Math.abs(soma - n.valorProdutos) < 0.02;
+  return Math.abs(soma - alvo) < 0.02;
 }
 
 export const brl = new Intl.NumberFormat("pt-BR", {
