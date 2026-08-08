@@ -2,30 +2,38 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
+  baixarArquivo,
   baixarCsv,
   brl,
   csvPorItem,
   csvPorNota,
   ehRecusa,
   formatarDoc,
+  gerarXmlNfe,
   lerXmlNfe,
+  nomeDoXml,
   somaConfere,
+  type ItemNota,
   type Nota,
   type Recusa,
 } from "@/lib/nota-fiscal";
 
 /**
- * A nota fiscal vira linha de planilha — brief-12 e o adendo de 07/08.
+ * Digitalizar e planilhar notas fiscais — brief-12, eixo invertido em 07/08.
  *
- * Duas vias, e a diferença entre elas é a peça:
+ * O processo que a peça automatiza é o da pilha de papel, e o desenho segue os
+ * dois verbos do processo, nesta ordem:
  *
- *   XML   → lido aqui mesmo, com DOMParser. Não sobe. Os campos já vêm
- *           nomeados no arquivo, então não há inferência nenhuma no caminho.
- *   IMAGEM→ sobe para /api/transcrever, porque uma figura não tem campo
- *           nomeado e alguma coisa precisa olhar.
+ *   foto  →  XML       digitalizar — o papel vira documento estruturado
+ *   XML   →  planilha  planilhar   — o documento vira linha de CSV
  *
- * Toda linha carrega de onde veio, na tela e no CSV. O que a via de imagem
- * escreveu sem conseguir ler direito aparece marcado — ver `incertos`.
+ * A foto é a entrada. Quem já tem o XML pula o primeiro estágio e entra pelo
+ * segundo — é atalho, não o caminho principal, porque nota que já está em XML
+ * já foi digitalizada por alguém.
+ *
+ * Nada do que a foto produz é declarado como exato: o XML gerado sai sem
+ * assinatura e sem protocolo, marcado por dentro, e a tabela deixa corrigir
+ * campo a campo com a foto original ao lado.
  */
 
 /** Teto de lote. Contenção de custo antes de qualquer chamada sair daqui. */
@@ -34,15 +42,6 @@ const MAX_PAGINAS_PDF = 5;
 /** Lado maior da imagem enviada. Acima disto não melhora a leitura, só o custo. */
 const LADO_MAX = 1600;
 
-/**
- * Sintéticos e versionados, no mesmo padrão zero-config da S2. Sem eles,
- * metade de quem chega vê uma tela vazia e sai — nem todo visitante tem uma
- * nota à mão na hora.
- *
- * Os dois não são iguais de propósito: um traz o envelope <nfeProc> com
- * protocolo e destinatário com CNPJ, o outro vem como <NFe> nua com CPF no
- * destinatário. São os dois caminhos que quebram parser ingênuo.
- */
 const EXEMPLOS = ["exemplo-nfe-mercadoria.xml", "exemplo-nfe-consumidor.xml"];
 
 type Fila = { total: number; feito: number; atual: string } | null;
@@ -65,12 +64,9 @@ async function reduzir(fonte: Blob): Promise<string> {
 }
 
 /**
- * Tipos mínimos do pdf.js — só o que esta peça usa.
- *
- * Escritos à mão em vez de importar os tipos do pacote por um motivo prático:
- * a assinatura de `render` mudou entre versões maiores, e um tipo local que
- * descreve a chamada real deixa a quebra aparecer aqui, numa linha, em vez de
- * espalhada pelo componente.
+ * Tipos mínimos do pdf.js — só o que esta peça usa. Escritos à mão porque a
+ * assinatura de `render` mudou entre versões maiores, e um tipo local faz a
+ * quebra aparecer numa linha em vez de espalhada pelo componente.
  */
 type PdfPagina = {
   getViewport(o: { scale: number }): { width: number; height: number };
@@ -87,11 +83,9 @@ type PdfLib = {
 };
 
 /**
- * PDF vira imagem no navegador, e só então sobe.
- *
- * `import()` dinâmico: o pdf.js é a primeira dependência de terceiro do hub e
- * ela não pode encostar na home nem nas outras rotas. Quem nunca arrastar um
- * PDF nunca baixa esse código.
+ * PDF vira imagem no navegador, e só então sobe. `import()` dinâmico: o pdf.js
+ * é a primeira dependência de terceiro do hub e não pode encostar na home nem
+ * nas outras rotas. Quem nunca arrastar um PDF nunca baixa esse código.
  */
 async function pdfParaImagens(arquivo: File): Promise<string[]> {
   const pdfjs = (await import("pdfjs-dist")) as unknown as PdfLib;
@@ -154,15 +148,43 @@ async function transcrever(imagem: string, arquivo: string): Promise<Nota | Recu
   };
 }
 
+/** "1.234,56" e "1234.56" viram 1234.56. Campo esvaziado vira null, não zero. */
+function numeroBr(v: string): number | null {
+  const limpo = v.trim();
+  if (!limpo) return null;
+  const n = Number.parseFloat(limpo.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * O número como ele aparece no campo editável.
+ *
+ * Sem isto o campo mostrava `87.4` — que é a representação de JavaScript, não
+ * um valor que alguém conferindo uma nota reconhece. Numa peça cujo produto é
+ * planilha brasileira, ponto decimal e centavo comido são erro de conteúdo, não
+ * de estilo. `decimais: null` deixa a quantidade em paz (1 continua "1", 1,5
+ * continua "1,5") em vez de virar "1,00".
+ */
+function paraCampo(v: string | number | null, decimais: number | null): string {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v !== "number") return String(v);
+  return v.toLocaleString("pt-BR", {
+    minimumFractionDigits: decimais ?? 0,
+    maximumFractionDigits: decimais ?? 4,
+  });
+}
+
 /* ---------------------------------------------------------------- componente */
 
 export function NotaFiscal() {
   const [notas, setNotas] = useState<Nota[]>([]);
+  /** dataURL da foto que originou cada nota, por id. Só existe para origem imagem. */
+  const [imagens, setImagens] = useState<Record<string, string>>({});
   const [recusas, setRecusas] = useState<Recusa[]>([]);
   const [fila, setFila] = useState<Fila>(null);
   const [arrastando, setArrastando] = useState(false);
   const [aberta, setAberta] = useState<string | null>(null);
-  /** null enquanto não perguntamos. A via de imagem só é anunciada se existir. */
+  /** null enquanto não perguntamos. A via de foto só é anunciada se existir. */
   const [imagemLigada, setImagemLigada] = useState<boolean | null>(null);
   const idCampo = useId();
   const entrada = useRef<HTMLInputElement>(null);
@@ -188,11 +210,9 @@ export function NotaFiscal() {
 
       const novasRecusas: Recusa[] = resto.map((a) => ({
         arquivo: a.name,
-        motivo: "não é XML, imagem nem PDF",
+        motivo: "não é foto, PDF nem XML",
       }));
 
-      // XML primeiro: é síncrono e barato, então a tabela já aparece preenchida
-      // enquanto as imagens ainda estão na fila.
       const novasNotas: Nota[] = [];
       for (const a of xmls) {
         const lido = lerXmlNfe(await a.text(), a.name);
@@ -205,7 +225,7 @@ export function NotaFiscal() {
         novasRecusas.push(
           ...figuras.map((a) => ({
             arquivo: a.name,
-            motivo: "a leitura de imagem não está ligada neste ambiente",
+            motivo: "a leitura de foto não está ligada neste ambiente",
           })),
         );
         setRecusas((r) => [...r, ...novasRecusas]);
@@ -216,7 +236,7 @@ export function NotaFiscal() {
       novasRecusas.push(
         ...figuras.slice(MAX_IMAGENS).map((a) => ({
           arquivo: a.name,
-          motivo: `passou do limite de ${MAX_IMAGENS} imagens por vez`,
+          motivo: `passou do limite de ${MAX_IMAGENS} fotos por vez`,
         })),
       );
       setRecusas((r) => [...r, ...novasRecusas]);
@@ -229,12 +249,18 @@ export function NotaFiscal() {
         const a = aceitas[i];
         setFila({ total: aceitas.length, feito: i, atual: a.name });
         try {
-          const imagens = /\.pdf$/i.test(a.name) ? await pdfParaImagens(a) : [await reduzir(a)];
-          for (let p = 0; p < imagens.length; p += 1) {
-            const nome = imagens.length > 1 ? `${a.name} (pág. ${p + 1})` : a.name;
-            const lido = await transcrever(imagens[p], nome);
-            if (ehRecusa(lido)) setRecusas((r) => [...r, lido]);
-            else setNotas((n) => [...n, lido]);
+          const quadros = /\.pdf$/i.test(a.name) ? await pdfParaImagens(a) : [await reduzir(a)];
+          for (let p = 0; p < quadros.length; p += 1) {
+            const nome = quadros.length > 1 ? `${a.name} (pág. ${p + 1})` : a.name;
+            const lido = await transcrever(quadros[p], nome);
+            if (ehRecusa(lido)) {
+              setRecusas((r) => [...r, lido]);
+            } else {
+              // A foto fica guardada em memória para a conferência lado a lado.
+              // Só nesta sessão — nada é persistido e nada volta ao servidor.
+              setImagens((m) => ({ ...m, [lido.id]: quadros[p] }));
+              setNotas((n) => [...n, lido]);
+            }
           }
         } catch {
           setRecusas((r) => [...r, { arquivo: a.name, motivo: "não consegui abrir este arquivo" }]);
@@ -244,6 +270,35 @@ export function NotaFiscal() {
     },
     [imagemLigada],
   );
+
+  /**
+   * Corrigir um campo apaga a marca "confira" dele — porque a marca quer dizer
+   * "o modelo não leu isto com clareza", e depois de um humano olhar a foto e
+   * digitar, isso deixou de ser verdade. É a única forma de a marca significar
+   * alguma coisa: se ela ficasse para sempre, ninguém olharia.
+   */
+  function corrigir(id: string, campo: keyof Nota, valor: string | number | null) {
+    setNotas((ns) =>
+      ns.map((n) =>
+        n.id === id
+          ? ({ ...n, [campo]: valor, incertos: n.incertos.filter((c) => c !== campo) } as Nota)
+          : n,
+      ),
+    );
+  }
+
+  function corrigirItem(id: string, numero: number, campo: keyof ItemNota, valor: string | number | null) {
+    setNotas((ns) =>
+      ns.map((n) =>
+        n.id === id
+          ? {
+              ...n,
+              itens: n.itens.map((i) => (i.numero === numero ? ({ ...i, [campo]: valor } as ItemNota) : i)),
+            }
+          : n,
+      ),
+    );
+  }
 
   async function carregarExemplos() {
     const lidos = await Promise.all(
@@ -258,37 +313,45 @@ export function NotaFiscal() {
   function limpar() {
     setNotas([]);
     setRecusas([]);
+    setImagens({});
     setAberta(null);
     if (entrada.current) entrada.current.value = "";
   }
 
   const totalItens = notas.reduce((t, n) => t + n.itens.length, 0);
-  const transcritas = notas.filter((n) => n.origem === "imagem").length;
+  const fotografadas = notas.filter((n) => n.origem === "imagem");
+  const porConferir = fotografadas.filter((n) => n.incertos.length).length;
   const ocupado = fila !== null;
+  const aceita = imagemLigada ? "image/*,application/pdf,.xml" : ".xml";
 
-  const aceita = imagemLigada ? ".xml,image/*,application/pdf" : ".xml";
+  /** Um download por nota, espaçados — o navegador engasga com uma rajada. */
+  async function baixarTodosOsXml() {
+    for (const n of fotografadas) {
+      baixarArquivo(gerarXmlNfe(n), nomeDoXml(n), "application/xml");
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  }
 
   return (
     <div className="nf">
       {/*
-        A explicação vem antes do campo, não no rodapé. É o único jeito de a
-        peça não mentir: uma das vias sobe o arquivo e a outra não, e quem vai
-        arrastar uma nota real tem o direito de saber qual é qual antes de
-        soltar.
+        A ordem deste bloco é a ordem do processo, e ela mudou em 07/08: a foto
+        vem primeiro porque é ela a entrada. O XML aparece depois, como o que
+        sai — e como atalho para quem já tem.
       */}
       <div className="nf-aviso">
-        <p>
-          <strong>O XML não sai do seu navegador.</strong> Ele já tem os campos nomeados
-          dentro dele, então ler é trabalho de leitor de XML — não precisa de servidor, e
-          não usa nenhum.
-        </p>
         {imagemLigada ? (
           <p>
-            <strong>A imagem sobe para ser lida.</strong> Uma foto não tem campo nomeado:
-            alguma coisa precisa olhar a figura. Ela é reduzida aqui, enviada para
-            transcrição e não fica guardada em lugar nenhum.
+            <strong>A foto entra e sobe para ser lida.</strong> Uma figura não tem campo
+            nomeado: alguma coisa precisa olhar. Ela é reduzida aqui, enviada para
+            transcrição, e não fica guardada em lugar nenhum.
           </p>
         ) : null}
+        <p>
+          <strong>O XML sai — e, se você já tiver um, ele também entra.</strong> Nota que já
+          está em XML não precisa ser lida por ninguém: os campos vêm nomeados dentro do
+          arquivo, e esse caminho não sobe nada. É atalho, não o caminho principal.
+        </p>
       </div>
 
       <div
@@ -306,9 +369,8 @@ export function NotaFiscal() {
       >
         {/*
           O <input> é o controle de verdade e o <label> é a área inteira: quem
-          usa teclado chega no campo por Tab e abre com Enter, sem nenhum
-          onKeyDown improvisado. O arrastar é um extra por cima, não o único
-          caminho.
+          usa teclado chega por Tab e abre com Enter, sem onKeyDown improvisado.
+          Arrastar é um extra por cima, não o único caminho.
         */}
         <input
           ref={entrada}
@@ -322,13 +384,11 @@ export function NotaFiscal() {
         />
         <label htmlFor={idCampo} className="nf-rotulo">
           <span className="nf-rotulo-forte">
-            {imagemLigada
-              ? "Arraste XML, foto ou PDF de nota"
-              : "Arraste os XML das notas"}
+            {imagemLigada ? "Arraste as fotos das notas" : "Arraste os XML das notas"}
           </span>
           <span className="nf-rotulo-fraco">
             {imagemLigada
-              ? `ou clique para escolher · até ${MAX_IMAGENS} imagens por vez`
+              ? `ou clique para escolher · PDF e XML também entram · até ${MAX_IMAGENS} fotos por vez`
               : "ou clique para escolher · vários de uma vez"}
           </span>
         </label>
@@ -345,7 +405,6 @@ export function NotaFiscal() {
         ) : null}
       </div>
 
-      {/* Progresso audível: quem não vê a barra ouve o arquivo que está saindo. */}
       <div aria-live="polite" className="nf-vivo">
         {fila ? (
           <p className="nf-progresso">
@@ -356,15 +415,16 @@ export function NotaFiscal() {
 
       {notas.length || recusas.length ? (
         <>
-          {/*
-            O resumo do lote antes da tabela. Quem arrasta 40 arquivos precisa
-            saber que 3 não entraram sem ter que procurar.
-          */}
           <p className="nf-resumo">
-            <strong>{notas.length}</strong>{" "}
-            {notas.length === 1 ? "nota lida" : "notas lidas"}
-            {transcritas ? ` (${transcritas} por imagem)` : ""} · <strong>{totalItens}</strong>{" "}
-            {totalItens === 1 ? "item" : "itens"}
+            <strong>{notas.length}</strong> {notas.length === 1 ? "nota lida" : "notas lidas"}
+            {fotografadas.length ? ` (${fotografadas.length} de foto)` : ""} ·{" "}
+            <strong>{totalItens}</strong> {totalItens === 1 ? "item" : "itens"}
+            {porConferir ? (
+              <>
+                {" "}
+                · <strong>{porConferir}</strong> {porConferir === 1 ? "pede" : "pedem"} conferência
+              </>
+            ) : null}
             {recusas.length ? (
               <>
                 {" "}
@@ -392,8 +452,9 @@ export function NotaFiscal() {
               <caption className="nf-legenda">
                 Uma linha por nota. A coluna <strong>origem</strong> diz de onde veio cada
                 uma — e as células marcadas com{" "}
-                <span className="nf-marca-inline">confira</span> são leituras de imagem que o
-                modelo não conseguiu ler com clareza.
+                <span className="nf-marca-inline">confira</span> são leituras de foto que o
+                modelo não conseguiu ler com clareza. Abra a linha para corrigir com a foto do
+                lado.
               </caption>
               <thead>
                 <tr>
@@ -406,9 +467,7 @@ export function NotaFiscal() {
                   <th scope="col" className="num">
                     Total
                   </th>
-                  <th scope="col" className="num">
-                    Itens
-                  </th>
+                  <th scope="col">Conferir</th>
                 </tr>
               </thead>
               <tbody>
@@ -416,8 +475,11 @@ export function NotaFiscal() {
                   <Linha
                     key={n.id}
                     nota={n}
+                    foto={imagens[n.id]}
                     aberta={aberta === n.id}
                     alternar={() => setAberta((a) => (a === n.id ? null : n.id))}
+                    corrigir={corrigir}
+                    corrigirItem={corrigirItem}
                   />
                 ))}
               </tbody>
@@ -430,7 +492,7 @@ export function NotaFiscal() {
               className="btn-primario"
               onClick={() => baixarCsv(csvPorNota(notas), "notas.csv")}
             >
-              Baixar CSV — uma linha por nota
+              Baixar planilha — uma linha por nota
             </button>
             <button
               type="button"
@@ -438,13 +500,25 @@ export function NotaFiscal() {
               onClick={() => baixarCsv(csvPorItem(notas), "itens.csv")}
               disabled={totalItens === 0}
             >
-              Baixar CSV — uma linha por item
+              Uma linha por item
             </button>
+            {fotografadas.length ? (
+              <button type="button" className="btn-secundario" onClick={baixarTodosOsXml}>
+                Baixar {fotografadas.length} XML {fotografadas.length === 1 ? "gerado" : "gerados"}
+              </button>
+            ) : null}
           </div>
+
           <p className="nf-nota-csv">
-            Os dois arquivos levam a coluna <code>origem</code> e a coluna{" "}
-            <code>conferir</code> junto. A marca precisa sobreviver à planilha — se ela só
-            existisse na tela, não serviria para nada.
+            A planilha leva a coluna <code>origem</code> e a coluna <code>conferir</code>{" "}
+            junto — a marca precisa sobreviver ao arquivo, senão não serve para nada.{" "}
+            {fotografadas.length ? (
+              <>
+                O XML gerado de foto sai <strong>sem assinatura e sem protocolo da SEFAZ</strong>,
+                com um aviso escrito dentro dele e nome começando em <code>transcrito-</code>.
+                Ele serve para importar, não para provar.
+              </>
+            ) : null}
           </p>
         </>
       ) : null}
@@ -456,30 +530,30 @@ export function NotaFiscal() {
 
 function Linha({
   nota,
+  foto,
   aberta,
   alternar,
+  corrigir,
+  corrigirItem,
 }: {
   nota: Nota;
+  foto?: string;
   aberta: boolean;
   alternar: () => void;
+  corrigir: (id: string, campo: keyof Nota, valor: string | number | null) => void;
+  corrigirItem: (id: string, numero: number, campo: keyof ItemNota, valor: string | number | null) => void;
 }) {
   const duvidoso = (campo: string) => nota.incertos.includes(campo);
   const confere = somaConfere(nota);
+  // Só o que veio de foto é editável. Um campo de XML é o que está escrito no
+  // documento — deixar corrigir ali seria deixar reescrever a nota fiscal.
+  const editavel = nota.origem === "imagem";
 
   const celula = (campo: string, conteudo: React.ReactNode, classe?: string) => (
     <td
       className={[classe, duvidoso(campo) ? "duvida" : null].filter(Boolean).join(" ") || undefined}
-      // A razão social é cortada com reticências na tabela para a coluna de
-      // valor caber. O texto inteiro continua aqui e no CSV — cortar na tela
-      // não pode virar cortar o dado.
       title={classe === "col-nome" && typeof conteudo === "string" ? conteudo : undefined}
     >
-      {/*
-        O corte precisa de um bloco de verdade por dentro da célula: com
-        `table-layout: auto`, `max-width` num <td> é sugestão e o navegador
-        estica a coluna assim mesmo. Foi o que jogou a coluna de valor para
-        fora da área visível na primeira captura.
-      */}
       {conteudo === null || conteudo === undefined ? (
         <span className="nf-vazio">—</span>
       ) : classe === "col-nome" ? (
@@ -496,7 +570,7 @@ function Linha({
       <tr className={nota.origem === "imagem" ? "de-imagem" : undefined}>
         <td>
           <span className={`nf-origem ${nota.origem}`}>
-            {nota.origem === "xml" ? "XML" : "IMAGEM"}
+            {nota.origem === "xml" ? "XML" : "FOTO"}
           </span>
         </td>
         {celula("documento", nota.documento)}
@@ -512,81 +586,240 @@ function Linha({
           )}
           {duvidoso("valorTotal") ? <span className="nf-marca">confira</span> : null}
         </td>
-        <td className="num">
-          {nota.itens.length ? (
-            <button
-              type="button"
-              className="nf-abrir"
-              onClick={alternar}
-              aria-expanded={aberta}
-            >
-              {nota.itens.length} {aberta ? "▾" : "▸"}
-            </button>
-          ) : (
-            <span className="nf-vazio">—</span>
-          )}
+        <td>
+          <button type="button" className="nf-abrir" onClick={alternar} aria-expanded={aberta}>
+            {nota.incertos.length ? `${nota.incertos.length} campo${nota.incertos.length > 1 ? "s" : ""}` : "abrir"}{" "}
+            {aberta ? "▾" : "▸"}
+          </button>
         </td>
       </tr>
 
       {aberta ? (
         <tr className="nf-detalhe">
           <td colSpan={8}>
-            {/*
-              A soma dos itens contra o total de produtos. Numa nota vinda de
-              XML ela fecha sempre; numa transcrição, é o aviso mais barato de
-              que um item saiu errado da leitura.
-            */}
-            {confere === false ? (
-              <p className="nf-alerta">
-                A soma dos itens não bate com o valor de produtos declarado. Numa leitura de
-                imagem, isso costuma ser um item transcrito errado.
-              </p>
-            ) : null}
-            <table className="nf-itens">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Descrição</th>
-                  <th scope="col">NCM</th>
-                  <th scope="col" className="num">
-                    Qtd
-                  </th>
-                  <th scope="col" className="num">
-                    Unitário
-                  </th>
-                  <th scope="col" className="num">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {nota.itens.map((i) => (
-                  <tr key={`${nota.id}-${i.numero}`}>
-                    <td>{i.numero}</td>
-                    <td>{i.descricao ?? <span className="nf-vazio">—</span>}</td>
-                    <td>{i.ncm ?? <span className="nf-vazio">—</span>}</td>
-                    <td className="num">{i.quantidade ?? <span className="nf-vazio">—</span>}</td>
-                    <td className="num">
-                      {i.valorUnitario === null ? (
-                        <span className="nf-vazio">—</span>
-                      ) : (
-                        brl.format(i.valorUnitario)
-                      )}
-                    </td>
-                    <td className="num">
-                      {i.valorTotal === null ? (
-                        <span className="nf-vazio">—</span>
-                      ) : (
-                        brl.format(i.valorTotal)
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={foto ? "nf-conferir com-foto" : "nf-conferir"}>
+              {foto ? (
+                <figure className="nf-foto">
+                  {/*
+                    <img> e não next/image: a fonte é um dataURL gerado no
+                    navegador nesta sessão, que o otimizador de imagem do Next
+                    não tem como processar — ele opera sobre URLs que o
+                    servidor consegue buscar.
+                  */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={foto} alt={`Foto de ${nota.arquivo}`} />
+                  <figcaption>
+                    A foto que gerou esta linha. Confira campo a campo — o que estiver
+                    marcado é o que o modelo leu com dúvida.
+                  </figcaption>
+                </figure>
+              ) : null}
+
+              <div className="nf-campos">
+                {editavel ? (
+                  <p className="nf-campos-titulo">
+                    Corrigir apaga a marca — a marca quer dizer &quot;o modelo não leu isto com
+                    clareza&quot;, e depois que você olhou a foto isso deixou de ser verdade.
+                  </p>
+                ) : (
+                  <p className="nf-campos-titulo">
+                    Veio de XML: os campos são o que está escrito no documento, e por isso
+                    não são editáveis aqui.
+                  </p>
+                )}
+
+                <div className="nf-grade">
+                  <Campo nota={nota} campo="documento" rotulo="Documento" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="chave" rotulo="Chave de acesso" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="numero" rotulo="Número" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="serie" rotulo="Série" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="emissao" rotulo="Emissão" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="emitenteNome" rotulo="Emitente" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="emitenteCnpj" rotulo="CNPJ do emitente" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="destinatarioNome" rotulo="Destinatário" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="destinatarioDoc" rotulo="Doc. do destinatário" editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="valorProdutos" rotulo="Produtos" numerico editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="valorFrete" rotulo="Frete" numerico editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="valorIcms" rotulo="ICMS" numerico editavel={editavel} corrigir={corrigir} />
+                  <Campo nota={nota} campo="valorTotal" rotulo="Total" numerico editavel={editavel} corrigir={corrigir} />
+                </div>
+
+                {confere === false ? (
+                  <p className="nf-alerta">
+                    A soma dos itens não bate com o valor de produtos declarado. Numa leitura
+                    de foto, isso costuma ser um item transcrito errado — vale conferir os dois
+                    contra a imagem.
+                  </p>
+                ) : null}
+
+                {nota.itens.length ? (
+                  <table className="nf-itens">
+                    <thead>
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Descrição</th>
+                        <th scope="col" className="num">
+                          Qtd
+                        </th>
+                        <th scope="col" className="num">
+                          Unitário
+                        </th>
+                        <th scope="col" className="num">
+                          Total
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {nota.itens.map((i) => (
+                        <tr key={`${nota.id}-${i.numero}`}>
+                          <td>{i.numero}</td>
+                          <td>
+                            <CampoItem
+                              valor={i.descricao}
+                              rotulo={`Descrição do item ${i.numero}`}
+                              editavel={editavel}
+                              aoMudar={(v) => corrigirItem(nota.id, i.numero, "descricao", v)}
+                            />
+                          </td>
+                          <td className="num">
+                            <CampoItem
+                              valor={i.quantidade}
+                              numerico
+                              decimais={null}
+                              rotulo={`Quantidade do item ${i.numero}`}
+                              editavel={editavel}
+                              aoMudar={(v) => corrigirItem(nota.id, i.numero, "quantidade", v)}
+                            />
+                          </td>
+                          <td className="num">
+                            <CampoItem
+                              valor={i.valorUnitario}
+                              numerico
+                              rotulo={`Valor unitário do item ${i.numero}`}
+                              editavel={editavel}
+                              aoMudar={(v) => corrigirItem(nota.id, i.numero, "valorUnitario", v)}
+                            />
+                          </td>
+                          <td className="num">
+                            <CampoItem
+                              valor={i.valorTotal}
+                              numerico
+                              rotulo={`Valor total do item ${i.numero}`}
+                              editavel={editavel}
+                              aoMudar={(v) => corrigirItem(nota.id, i.numero, "valorTotal", v)}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : null}
+
+                {editavel ? (
+                  <button
+                    type="button"
+                    className="calc-reset"
+                    onClick={() => baixarArquivo(gerarXmlNfe(nota), nomeDoXml(nota), "application/xml")}
+                  >
+                    Baixar o XML desta nota
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </td>
         </tr>
       ) : null}
     </>
+  );
+}
+
+/* --------------------------------------------------------------------- campo */
+
+function Campo({
+  nota,
+  campo,
+  rotulo,
+  numerico,
+  editavel,
+  corrigir,
+}: {
+  nota: Nota;
+  campo: keyof Nota;
+  rotulo: string;
+  numerico?: boolean;
+  editavel: boolean;
+  corrigir: (id: string, campo: keyof Nota, valor: string | number | null) => void;
+}) {
+  const bruto = nota[campo] as string | number | null;
+  const duvida = nota.incertos.includes(campo as string);
+  const id = useId();
+
+  const texto = paraCampo(bruto, numerico ? 2 : null);
+
+  if (!editavel) {
+    return (
+      <div className="nf-campo">
+        <span className="nf-campo-rotulo">{rotulo}</span>
+        <span className="nf-campo-valor">
+          {texto === "" ? <span className="nf-vazio">—</span> : texto}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`nf-campo${duvida ? " duvida" : ""}`}>
+      <label className="nf-campo-rotulo" htmlFor={id}>
+        {rotulo}
+        {duvida ? <span className="nf-marca-inline"> confira</span> : null}
+      </label>
+      <input
+        id={id}
+        type="text"
+        inputMode={numerico ? "decimal" : undefined}
+        defaultValue={texto}
+        placeholder="não lido"
+        // onBlur e não onChange: a marca "confira" só sai quando a pessoa
+        // termina de digitar. Apagando a cada tecla, ela sumiria no primeiro
+        // caractere e o campo pareceria conferido no meio da correção.
+        onBlur={(e) => corrigir(nota.id, campo, numerico ? numeroBr(e.target.value) : e.target.value || null)}
+      />
+    </div>
+  );
+}
+
+function CampoItem({
+  valor,
+  numerico,
+  /** null = não força casas (quantidade). 2 = dinheiro. */
+  decimais = 2,
+  rotulo,
+  editavel,
+  aoMudar,
+}: {
+  valor: string | number | null;
+  numerico?: boolean;
+  decimais?: number | null;
+  rotulo: string;
+  editavel: boolean;
+  aoMudar: (v: string | number | null) => void;
+}) {
+  if (!editavel) {
+    return valor === null ? (
+      <span className="nf-vazio">—</span>
+    ) : (
+      <>{typeof valor === "number" && numerico ? brl.format(valor) : valor}</>
+    );
+  }
+  return (
+    <input
+      className="nf-item-input"
+      type="text"
+      inputMode={numerico ? "decimal" : undefined}
+      defaultValue={paraCampo(valor, numerico ? decimais : null)}
+      placeholder="—"
+      aria-label={rotulo}
+      onBlur={(e) => aoMudar(numerico ? numeroBr(e.target.value) : e.target.value || null)}
+    />
   );
 }

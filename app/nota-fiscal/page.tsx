@@ -45,9 +45,9 @@ export default function PaginaNotaFiscal() {
           <p className="ferramenta-grupo">Puxa dado de onde ele está</p>
           <h1 className="ferramenta-titulo">{PECA.nome}</h1>
           <p className="ferramenta-linha">
-            Arraste os arquivos das suas notas e leve a planilha pronta. O XML é lido aqui
-            mesmo, sem sair do seu navegador; a foto sobe para ser transcrita — e cada linha
-            diz de onde veio.
+            Fotografe a pilha. Cada nota vira um XML e uma linha de planilha, e cada campo
+            que o modelo não leu com clareza chega marcado — para você conferir com a foto
+            do lado e corrigir ali mesmo.
           </p>
         </div>
 
@@ -55,10 +55,11 @@ export default function PaginaNotaFiscal() {
 
         <div className="ferramenta-pe">
           <p>
-            Digitar chave de 44 dígitos e mais uma dúzia de campos, nota a nota, é o
-            processo manual mais caro que existe num escritório contábil — e é caro duas
-            vezes, porque cada digitação é uma chance de errar um número que ninguém confere
-            depois.
+            O processo é sempre o mesmo: a pilha de papel chega, alguém digitaliza, alguém
+            digita, alguém confere. Digitar chave de 44 dígitos e mais uma dúzia de campos,
+            nota a nota, é caro duas vezes — pelo tempo, e porque cada digitação é uma chance
+            de errar um número que ninguém confere depois. Esta peça faz os dois primeiros
+            passos e mostra exatamente onde o terceiro precisa acontecer.
           </p>
           <p>
             <Link className="btn-secundario" href="/calculadora">

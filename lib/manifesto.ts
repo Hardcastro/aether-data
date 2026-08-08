@@ -222,7 +222,7 @@ export const PECAS: Peca[] = [
     slug: "nota-fiscal-planilha",
     nome: "A nota fiscal vira linha de planilha",
     capacidade:
-      "XML de NF-e lido no navegador e foto de nota transcrita por modelo de visão — com a origem de cada linha declarada",
+      "Foto da nota vira XML e vira linha de planilha — com a foto ao lado para conferir o que o modelo leu com dúvida",
     grupo: "puxa",
     // Primeira automação do grupo `puxa`: até 07/08 o grupo era só de sites. O
     // apoio dele sempre disse "documento" e a vaga nunca tinha sido ocupada.
@@ -237,8 +237,8 @@ export const PECAS: Peca[] = [
     repo: "https://github.com/Hardcastro/aether-data",
     stack: ["Next.js", "DOMParser", "Claude (visão)", "pdf.js"],
     oQueProva: [
-      "Duas vias para o mesmo resultado, e a diferença entre elas é a peça. O XML da NF-e é lido aqui no navegador e não sobe: os campos já vêm nomeados no arquivo, então ler é trabalho de leitor de XML, não de inteligência. A foto do cupom amassado sobe, porque uma figura não tem campo nomeado e alguma coisa precisa olhar. Quem entende por que um sobe e o outro não entendeu a diferença entre dado estruturado e dado que só parece estruturado.",
-      "E toda linha carrega de onde veio — na tela e dentro do CSV. Linha de XML é documento fiscal; linha de imagem é palpite bem-informado, com os campos que o modelo não conseguiu ler marcados um a um como \"confira\" em vez de preenchidos com algo plausível. Misturar as duas em silêncio é como um número transcrito errado entra na contabilidade de alguém, e é o que quase toda ferramenta parecida faz.",
+      "O processo inteiro da pilha de papel, nos dois verbos que ele tem: digitalizar e planilhar. A foto entra, vira um XML no layout que os sistemas importam, e o XML vira linha de planilha. Quem já tem o XML pula o primeiro estágio — esse caminho não sobe nada, porque nota já digital não precisa que ninguém olhe para ela.",
+      "E o que veio de foto nunca se disfarça de documento. O XML gerado sai sem assinatura e sem protocolo da SEFAZ, com o aviso escrito dentro dele; a tabela marca campo a campo o que o modelo leu com dúvida em vez de preencher com algo plausível; e abrir a linha põe a foto original ao lado dos campos, para conferir e corrigir ali. Um número transcrito errado entrando na contabilidade de alguém é o dano real desta categoria de ferramenta, e cada uma dessas decisões existe contra ele.",
     ],
   },
   {

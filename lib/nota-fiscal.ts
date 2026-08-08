@@ -211,10 +211,27 @@ export function lerXmlNfe(conteudo: string, arquivo: string): Nota | Recusa {
     // `nItem` é a ordem declarada. A ordem no arquivo não é garantia.
     .sort((a, b) => a.numero - b.numero);
 
+  /*
+    Um XML que esta peça mesmo gerou a partir de uma foto volta marcado como
+    IMAGEM, não como XML exato. Sem esta leitura, bastaria exportar e
+    rearrastar para a procedência se perder — a peça lavaria o próprio palpite
+    e o devolveria com cara de documento fiscal. Ver MARCA_TRANSCRICAO.
+  */
+  const observacao = texto(achar(infNFe, "infAdic"), "infCpl") ?? "";
+  const transcrito = observacao.includes(MARCA_TRANSCRICAO);
+  const incertos = transcrito
+    ? (observacao
+        .split(MARCA_INCERTOS)[1]
+        ?.replace(/\.$/, "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean) ?? [])
+    : [];
+
   return {
     id: novoId(),
     arquivo,
-    origem: "xml",
+    origem: transcrito ? "imagem" : "xml",
     documento: "NF-e",
     chave: chave && chave.length === 44 ? chave : null,
     numero: texto(ide, "nNF"),
@@ -231,12 +248,143 @@ export function lerXmlNfe(conteudo: string, arquivo: string): Nota | Recusa {
     valorIcms: numero(total, "vICMS"),
     valorTotal: numero(total, "vNF"),
     itens,
-    incertos: [],
+    incertos,
   };
 }
 
 export function ehRecusa(r: Nota | Recusa): r is Recusa {
   return "motivo" in r;
+}
+
+/* ------------------------------------------------- gerar XML da transcrição */
+
+/**
+ * A marca que separa um XML transcrito de um documento fiscal.
+ *
+ * Ela existe porque um XML gerado de foto **parece** uma NF-e, e um sistema
+ * contábil que o importe vai tratá-lo como se fosse. A coluna `origem`, que
+ * segura a honestidade da tabela e do CSV, não sobrevive ao formato — XML de
+ * NF-e não tem campo para "isto é um palpite". Então a proteção é outra, e são
+ * quatro camadas de uma vez:
+ *
+ *   1. Sem `<nfeProc>` e sem `<protNFe>` — não há protocolo de autorização.
+ *   2. Sem `<Signature>` — não há assinatura digital.
+ *   3. Esta frase em `<infCpl>`, que é campo impresso no DANFE e lido por ERP.
+ *   4. Nome de arquivo começando em `transcrito-`.
+ *
+ * A frase também é o que permite reconhecer o próprio arquivo quando ele
+ * voltar para cá: um XML transcrito rearrastado na peça continua marcado como
+ * IMAGEM em vez de virar XML exato. Sem isso, a peça lavaria a procedência do
+ * próprio dado numa volta.
+ */
+export const MARCA_TRANSCRICAO = "TRANSCRITO DE IMAGEM POR AETHER DATA";
+const MARCA_INCERTOS = "Campos incertos:";
+
+function esc(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Tag só existe se houver valor. Campo ausente não vira tag vazia nem zero. */
+function tag(nome: string, v: string | number | null): string {
+  if (v === null || v === undefined || v === "") return "";
+  const texto = typeof v === "number" ? v.toFixed(2) : esc(String(v));
+  return `<${nome}>${texto}</${nome}>`;
+}
+
+/**
+ * Monta um XML no layout NF-e 4.00 a partir do que foi transcrito.
+ *
+ * **O que ele não faz, de propósito:** não inventa chave de acesso. Se a foto
+ * não deixou ler os 44 dígitos, o atributo `Id` simplesmente não sai — o
+ * arquivo fica fora do schema, e isso é melhor que um documento bem-formado
+ * com uma chave fabricada. Schema-válido não é o objetivo; não mentir é.
+ */
+export function gerarXmlNfe(nota: Nota, agora = new Date()): string {
+  const dest = nota.destinatarioDoc?.replace(/\D/g, "") ?? "";
+  const docDest =
+    dest.length === 14 ? tag("CNPJ", dest) : dest.length === 11 ? tag("CPF", dest) : "";
+
+  const itens = nota.itens
+    .map(
+      (i) => `      <det nItem="${i.numero}">
+        <prod>
+          ${tag("cProd", i.codigo)}
+          ${tag("xProd", i.descricao)}
+          ${tag("NCM", i.ncm)}
+          ${tag("CFOP", i.cfop)}
+          ${tag("uCom", i.unidade)}
+          ${i.quantidade === null ? "" : `<qCom>${i.quantidade.toFixed(4)}</qCom>`}
+          ${tag("vUnCom", i.valorUnitario)}
+          ${tag("vProd", i.valorTotal)}
+        </prod>
+      </det>`,
+    )
+    .join("\n");
+
+  const incertos = nota.incertos.length ? ` ${MARCA_INCERTOS} ${nota.incertos.join(", ")}.` : "";
+  const observacao =
+    `${MARCA_TRANSCRICAO} EM ${agora.toISOString().slice(0, 10)}. ` +
+    `NAO E DOCUMENTO FISCAL: sem assinatura digital e sem protocolo de autorizacao da SEFAZ. ` +
+    `Conferir contra o documento original antes de usar.` +
+    (nota.chave ? "" : " A chave de acesso nao pode ser lida na imagem.") +
+    incertos;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Gerado por AEther Data a partir de uma imagem. NAO e um documento fiscal:
+  nao tem assinatura digital nem protocolo de autorizacao da SEFAZ, e os
+  valores foram lidos de uma figura por um modelo de linguagem.
+  Confira contra o documento original antes de usar.
+-->
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe versao="4.00"${nota.chave ? ` Id="NFe${nota.chave}"` : ""}>
+    <ide>
+      ${tag("nNF", nota.numero)}
+      ${tag("serie", nota.serie)}
+      ${tag("dhEmi", nota.emissao)}
+    </ide>
+    <emit>
+      ${tag("CNPJ", nota.emitenteCnpj?.replace(/\D/g, "") ?? null)}
+      ${tag("xNome", nota.emitenteNome)}
+    </emit>
+    <dest>
+      ${docDest}
+      ${tag("xNome", nota.destinatarioNome)}
+    </dest>
+${itens}
+    <total>
+      <ICMSTot>
+        ${tag("vProd", nota.valorProdutos)}
+        ${tag("vFrete", nota.valorFrete)}
+        ${tag("vICMS", nota.valorIcms)}
+        ${tag("vNF", nota.valorTotal)}
+      </ICMSTot>
+    </total>
+    <infAdic>
+      <infCpl>${esc(observacao)}</infCpl>
+    </infAdic>
+  </infNFe>
+</NFe>
+`;
+}
+
+export function nomeDoXml(nota: Nota): string {
+  const base = nota.chave ?? nota.numero ?? nota.arquivo.replace(/\.[^.]+$/, "");
+  return `transcrito-${base}.xml`.replace(/[^\w.-]+/g, "-");
+}
+
+export function baixarArquivo(conteudo: string, nome: string, tipo: string) {
+  const blob = new Blob([conteudo], { type: `${tipo};charset=utf-8` });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /* -------------------------------------------------------------------- CSV */
@@ -364,13 +512,7 @@ export function csvPorItem(notas: Nota[]): string {
 }
 
 export function baixarCsv(conteudo: string, nome: string) {
-  const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nome;
-  a.click();
-  URL.revokeObjectURL(url);
+  baixarArquivo(conteudo, nome, "text/csv");
 }
 
 /* ------------------------------------------------------------ conferências */
