@@ -68,7 +68,7 @@ function configurar(escopo: Tipo | null): Config {
 function resolverAberto(cfg: Config, slug: string | undefined): ItemVitrine {
   /*
     Slug estranho ao escopo cai no primeiro item em vez de abrir errado. Sem
-    isso, /sites?peca=calculadora-custo mostraria uma automação com o seletor
+    isso, /sites?peca=nota-fiscal-planilha mostraria uma automação com o seletor
     ao lado listando outras quatro peças e as setas percorrendo uma lista onde
     a peça aberta não existe.
   */

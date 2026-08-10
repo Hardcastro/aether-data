@@ -405,11 +405,11 @@ export function NotaFiscal({ fotoLigada }: { fotoLigada: boolean }) {
       </div>
 
       <div className="nf-atalhos">
-        <button type="button" className="calc-reset" onClick={carregarExemplos} disabled={ocupado}>
+        <button type="button" className="botao-discreto" onClick={carregarExemplos} disabled={ocupado}>
           Não tenho nota agora — carregar exemplos
         </button>
         {notas.length || recusas.length ? (
-          <button type="button" className="calc-reset" onClick={limpar} disabled={ocupado}>
+          <button type="button" className="botao-discreto" onClick={limpar} disabled={ocupado}>
             Limpar
           </button>
         ) : null}
@@ -740,7 +740,7 @@ function Linha({
                 {editavel ? (
                   <button
                     type="button"
-                    className="calc-reset"
+                    className="botao-discreto"
                     onClick={() => baixarArquivo(gerarXmlNfe(nota), nomeDoXml(nota), "application/xml")}
                   >
                     Baixar o XML desta nota

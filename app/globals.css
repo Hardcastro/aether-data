@@ -818,123 +818,24 @@ body:has(.ferramenta) {
   padding-top: 2rem;
 }
 
-/* painel de vidro da ferramenta */
-
-.calc {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 28px;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.calc-campos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 1.25rem;
-}
-
 /*
-  .calc-campo, não .campo: o Hero já usa `.campo` (+ .campo-fg/.campo-bg) para
-  o campo de partículas de fundo — position:absolute, inset:0, pointer-events:
-  none. Mesmo nome, mesma especificidade (0,1,0): o cascade não troca uma regra
-  pela outra, funde as duas, e as propriedades que esta classe nunca menciona
-  (position, inset) continuam valendo por baixo. Resultado: os três campos do
-  formulário viravam absolutos e inset:0 dentro de `.ferramenta` (a primeira
-  ancestral com position:relative), empilhados exatamente um sobre o outro.
-  Um nome próprio resolve, e resolve de quebra a regra de
-  prefers-reduced-motion logo abaixo, que também mirava `.campo` e apagava a
-  calculadora inteira — não só o campo de partículas — para quem pede menos
-  movimento.
+  Botão discreto de ação secundária — "carregar exemplo", "limpar", "voltar
+  aos valores iniciais".
+
+  Nasceu como `.calc-reset` dentro da calculadora, e sobreviveu a ela: quando a
+  peça foi enterrada em 10/08, a /nota-fiscal já usava esta regra em três
+  botões. Renomeada em vez de removida, porque o nome antigo apontava para uma
+  peça que não existe mais — e mantida por inteiro, porque ela cobre um caso
+  que `.btn-secundario` não cobre.
+
+  A diferença importa e já custou uma parada, registrada em notas.md em 07/08:
+  `.btn-primario` e `.btn-secundario` nasceram no Hero para <a>, então nunca
+  zeraram fundo, borda e família de fonte — num link não há nada disso para
+  zerar. Em <button> o navegador repõe os três e o resultado sai com o cinza
+  nativo. Esta regra zera os três de propósito, e é por isso que ela é a certa
+  para botão.
 */
-.calc-campo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.calc-campo label {
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-.calc-campo input {
-  font-family: var(--font-main);
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--text-color);
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  padding: 0.7rem 0.9rem;
-  width: 100%;
-  /* O spinner nativo some: ele rouba largura e não ajuda em nada aqui. */
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-.calc-campo input::-webkit-outer-spin-button,
-.calc-campo input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.campo-apoio {
-  font-size: 0.74rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.calc-saida {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-.calc-rotulo {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted-color);
-}
-.calc-total {
-  font-family: var(--font-display);
-  font-size: clamp(2.8rem, 9vw, 4.2rem);
-  line-height: 1.1;
-  margin: 0.3rem 0;
-}
-.calc-ano {
-  font-size: 0.86rem;
-  color: var(--muted-color);
-}
-
-.calc-formula {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-size: 0.88rem;
-  line-height: 1.6;
-  color: var(--muted-color);
-}
-.calc-formula-titulo {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.calc-formula-linha strong {
-  color: var(--text-color);
-  font-weight: 600;
-}
-.calc-formula-nota {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 0.3rem;
-}
-
-.calc-reset {
+.botao-discreto {
   align-self: flex-start;
   font-family: var(--font-main);
   font-size: 0.8rem;
@@ -947,7 +848,7 @@ body:has(.ferramenta) {
   cursor: pointer;
   transition: all 0.3s ease;
 }
-.calc-reset:hover {
+.botao-discreto:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-color);
 }
@@ -1419,10 +1320,6 @@ body:has(.ferramenta) {
 @media (max-width: 640px) {
   .ferramenta {
     padding-top: 7.5rem;
-  }
-  .calc {
-    padding: 1.4rem;
-    border-radius: 22px;
   }
   .nf {
     padding: 1.4rem;

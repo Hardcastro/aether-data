@@ -42,7 +42,7 @@ export function itemDaPeca(peca: Peca): ItemVitrine {
     mock: null,
     fichas: peca.stack,
     /*
-      Peça interna mora numa rota deste mesmo site (/calculadora…): abrir aba
+      Peça interna mora numa rota deste mesmo site (/nota-fiscal…): abrir aba
       nova para ir de uma página do site a outra é ruído. Só peça externa —
       projeto próprio na Vercel — abre fora.
     */
