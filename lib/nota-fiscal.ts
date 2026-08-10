@@ -200,11 +200,11 @@ function classificar(doc: Document): { tipo: "nfe"; raiz: Element } | { tipo: "r
   if (achar(doc, "CompNfse") || achar(doc, "Nfse") || achar(doc, "InfNfse")) {
     return {
       tipo: "recusa",
-      motivo: "é NFS-e de prefeitura — cada município tem um layout próprio. Arraste a imagem ou o PDF dela",
+      motivo: "é NFS-e de prefeitura — cada município tem um layout próprio. Arraste a foto ou o PDF dela",
     };
   }
   if (achar(doc, "infCte")) {
-    return { tipo: "recusa", motivo: "é um CT-e (transporte), fora desta peça" };
+    return { tipo: "recusa", motivo: "é um CT-e (conhecimento de transporte), que esta ferramenta não lê" };
   }
   const raiz = doc.documentElement?.nodeName ?? "desconhecido";
   return { tipo: "recusa", motivo: `não é uma NF-e — o elemento raiz é <${raiz}>` };
@@ -256,7 +256,8 @@ export function lerXmlNfe(conteudo: string, arquivo: string): Nota | Recusa {
     e o devolveria com cara de documento fiscal. Ver MARCA_TRANSCRICAO.
   */
   const observacao = texto(achar(infNFe, "infAdic"), "infCpl") ?? "";
-  const transcrito = observacao.includes(MARCA_TRANSCRICAO);
+  const transcrito =
+    observacao.includes(MARCA_TRANSCRICAO) || observacao.includes(MARCA_ANTIGA);
   const incertos = transcrito
     ? (observacao
         .split(MARCA_INCERTOS)[1]
@@ -288,7 +289,9 @@ export function lerXmlNfe(conteudo: string, arquivo: string): Nota | Recusa {
     itens,
     incertos,
     avisos: transcrito
-      ? ["Este XML foi gerado a partir de uma foto por esta mesma peça — não é documento fiscal."]
+      ? [
+          "Este XML foi gerado aqui mesmo, a partir de uma foto. Não é documento fiscal: não tem assinatura nem protocolo da SEFAZ.",
+        ]
       : [],
   };
 }
@@ -318,7 +321,18 @@ export function ehRecusa(r: Nota | Recusa): r is Recusa {
  * IMAGEM em vez de virar XML exato. Sem isso, a peça lavaria a procedência do
  * próprio dado numa volta.
  */
-export const MARCA_TRANSCRICAO = "TRANSCRITO DE IMAGEM POR AETHER DATA";
+export const MARCA_TRANSCRICAO = "TRANSCRITO DE FOTO POR AETHER DATA";
+/**
+ * A redação anterior, que dizia "DE IMAGEM".
+ *
+ * Continua sendo reconhecida na leitura, e só nela. A palavra mudou para
+ * "foto" em 10/08 para bater com o que a tela e o CSV já diziam — mas XML
+ * baixado antes disso existe, e se ele deixasse de ser reconhecido voltaria
+ * marcado como documento exato. Seria a peça lavando a procedência do próprio
+ * dado por causa de uma troca de palavra: exatamente o que a marca existe para
+ * impedir. Três linhas custam menos que um arquivo órfão.
+ */
+const MARCA_ANTIGA = "TRANSCRITO DE IMAGEM POR AETHER DATA";
 const MARCA_INCERTOS = "Campos incertos:";
 
 function esc(v: string): string {
@@ -371,14 +385,14 @@ export function gerarXmlNfe(nota: Nota, agora = new Date()): string {
     `${MARCA_TRANSCRICAO} EM ${agora.toISOString().slice(0, 10)}. ` +
     `NAO E DOCUMENTO FISCAL: sem assinatura digital e sem protocolo de autorizacao da SEFAZ. ` +
     `Conferir contra o documento original antes de usar.` +
-    (nota.chave ? "" : " A chave de acesso nao pode ser lida na imagem.") +
+    (nota.chave ? "" : " A chave de acesso nao pode ser lida na foto.") +
     incertos;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Gerado por AEther Data a partir de uma imagem. NAO e um documento fiscal:
+  Gerado por AEther Data a partir de uma foto. NAO e um documento fiscal:
   nao tem assinatura digital nem protocolo de autorizacao da SEFAZ, e os
-  valores foram lidos de uma figura por um modelo de linguagem.
+  valores foram lidos de uma foto por um modelo de linguagem.
   Confira contra o documento original antes de usar.
 -->
 <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
@@ -479,7 +493,10 @@ export function csvPorNota(notas: Nota[]): string {
       "itens",
     ],
     notas.map((n) => [
-      n.origem === "xml" ? "XML" : "IMAGEM",
+      // "FOTO", igual ao selo da tela. Antes a tela dizia FOTO e o CSV dizia
+      // IMAGEM — mesmo conceito, duas palavras, e a divergência viajava no
+      // arquivo que sobrevive à sessão.
+      n.origem === "xml" ? "XML" : "FOTO",
       // A coluna que faz a marca sobreviver à sessão. Sem ela no arquivo, a
       // distinção só existe na tela e não serve para nada.
       n.incertos.length ? n.incertos.join(" ") : "",
@@ -508,7 +525,10 @@ export function csvPorItem(notas: Nota[]): string {
   for (const n of notas) {
     for (const i of n.itens) {
       linhas.push([
-        n.origem === "xml" ? "XML" : "IMAGEM",
+        // "FOTO", igual ao selo da tela. Antes a tela dizia FOTO e o CSV dizia
+      // IMAGEM — mesmo conceito, duas palavras, e a divergência viajava no
+      // arquivo que sobrevive à sessão.
+      n.origem === "xml" ? "XML" : "FOTO",
         n.incertos.length ? n.incertos.join(" ") : "",
         n.arquivo,
         n.chave,

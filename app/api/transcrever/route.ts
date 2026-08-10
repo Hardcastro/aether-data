@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
 
   const imagem = corpo.imagem;
   if (!imagem || typeof imagem !== "string") {
-    return NextResponse.json({ erro: "Nenhuma imagem recebida." }, { status: 400 });
+    return NextResponse.json({ erro: "Nenhuma foto chegou aqui." }, { status: 400 });
   }
 
   const m = imagem.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
   // para medir.
   if ((base64.length * 3) / 4 > MAX_BYTES) {
     return NextResponse.json(
-      { erro: "Imagem grande demais depois do redimensionamento. Tente uma foto menor." },
+      { erro: "Foto grande demais mesmo depois de reduzida. Tente uma menor." },
       { status: 413 },
     );
   }

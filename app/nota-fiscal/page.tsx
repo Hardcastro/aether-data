@@ -69,7 +69,7 @@ export default function PaginaNotaFiscal() {
               <>
                 Arraste os XML das suas notas e leve a planilha pronta. A leitura de{" "}
                 <strong>foto</strong> — que transforma a pilha de papel em XML antes de
-                virar planilha — está construída, mas não ligada neste ambiente.
+                virar planilha — está pronta, mas não ligada neste ambiente.
               </>
             )}
           </p>
@@ -82,7 +82,7 @@ export default function PaginaNotaFiscal() {
             O processo é sempre o mesmo: a pilha de papel chega, alguém digitaliza, alguém
             digita, alguém confere. Digitar chave de 44 dígitos e mais uma dúzia de campos,
             nota a nota, é caro duas vezes — pelo tempo, e porque cada digitação é uma chance
-            de errar um número que ninguém confere depois. Esta peça faz os dois primeiros
+            de errar um número que ninguém confere depois. Isto aqui faz os dois primeiros
             passos e mostra exatamente onde o terceiro precisa acontecer.
           </p>
           <p>

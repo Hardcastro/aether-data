@@ -352,9 +352,9 @@ export function NotaFiscal({ fotoLigada }: { fotoLigada: boolean }) {
           */
           <p className="nf-desligado">
             <strong>A leitura de foto está desligada neste ambiente.</strong> Falta a
-            variável <code>GEMINI_API_KEY</code> no projeto. A via existe e está construída
-            — o que você vê abaixo é a peça funcionando pela metade, de propósito, em vez de
-            aceitar uma foto e falhar depois de você esperar.
+            variável <code>GEMINI_API_KEY</code> no projeto. Ela está construída e
+            funcionando — o que você vê abaixo é metade do que esta ferramenta faz, e ela
+            prefere dizer isso a aceitar uma foto e falhar depois de você esperar.
           </p>
         )}
         <p>
