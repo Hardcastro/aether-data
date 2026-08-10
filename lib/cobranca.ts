@@ -17,6 +17,41 @@
  *    o que o modelo fez com a chave de 45 dígitos em 07/08.
  */
 
+import {
+  achatar,
+  chutarColunas,
+  dataBR,
+  dinheiroCsv,
+  montarCsv,
+  normalizarData,
+  normalizarValor,
+  reais,
+  type Tabela,
+} from "./tabela";
+
+/*
+  O leitor de tabela suja mora em `lib/tabela.ts` desde 10/08/2026 — foi
+  extraído inteiro daqui para a `/conciliacao` herdar, sem nenhuma mudança de
+  comportamento. Continua saindo por este módulo para quem já importava dele:
+  o componente da /cobranca não precisou de uma linha de alteração.
+
+  **`import` e `export … from` são as duas coisas, e precisam das duas.**
+  `export { x } from "./y"` reexporta para quem importa deste módulo e **não**
+  cria binding local — as funções continuavam faltando dentro do `agrupar`
+  daqui. O `tsc` pegou; o `node --experimental-strip-types` das conferências
+  não pegaria, porque ele tira tipo e não confere nada.
+*/
+export {
+  decodificar,
+  lerCsv,
+  normalizarValor,
+  normalizarData,
+  hojeISO,
+  reais,
+  dataBR,
+  type Tabela,
+} from "./tabela";
+
 /* ------------------------------------------------------------------- tipos */
 
 /** Os cinco campos que a peça precisa achar no CSV de quem chegou. */
@@ -144,200 +179,7 @@ export const ENCARGOS_DESLIGADOS: Encargos = {
 export const TETO_MULTA = 2;
 export const TETO_JUROS_MES = 1;
 
-/* --------------------------------------------------------------- decodificar */
-
-/**
- * CSV de sistema brasileiro ainda sai em `windows-1252` com frequência
- * desconfortável. Ler como UTF-8 transforma `Cobrança` em `Cobranï¿½a`, e o
- * nome do devedor — que vai dentro da mensagem — sai quebrado.
- *
- * O teste é o próprio decodificador: `fatal: true` faz o UTF-8 lançar diante de
- * uma sequência inválida, e é exatamente essa a diferença entre os dois. Sem
- * `fatal`, o UTF-8 aceita qualquer coisa e devolve U+FFFD calado.
- */
-export function decodificar(bytes: ArrayBuffer): string {
-  try {
-    const texto = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return texto.replace(/^﻿/, "");
-  } catch {
-    return new TextDecoder("windows-1252").decode(bytes).replace(/^﻿/, "");
-  }
-}
-
-/* ------------------------------------------------------------------- ler CSV */
-
-/**
- * Separador, descoberto e não presumido.
- *
- * Excel em português salva CSV com `;` porque a vírgula já é o decimal. Sheets
- * e sistemas exportam com `,`. Alguns ERPs cospem TAB. Contar fora das aspas é
- * o que impede `"Silva, João"` de eleger a vírgula num arquivo de `;`.
- */
-function acharSeparador(linhas: string[]): string {
-  const candidatos = [";", ",", "\t", "|"];
-  let melhor = ";";
-  let melhorNota = -1;
-
-  for (const sep of candidatos) {
-    let nota = 0;
-    for (const linha of linhas.slice(0, 20)) {
-      let dentro = false;
-      let conta = 0;
-      for (let i = 0; i < linha.length; i++) {
-        const c = linha[i];
-        if (c === '"') dentro = !dentro;
-        else if (c === sep && !dentro) conta++;
-      }
-      nota += conta;
-    }
-    if (nota > melhorNota) {
-      melhorNota = nota;
-      melhor = sep;
-    }
-  }
-  return melhor;
-}
-
-/**
- * Uma linha de CSV, respeitando aspas e o `""` que escapa aspas dentro delas.
- *
- * A sutileza que custou uma conferência: **aspas só delimitam quando abrem a
- * célula.** `CONSTRUTORA "PONTE NOVA" LTDA` numa coluna sem aspas é nome de
- * empresa, não citação — tratar aquele `"` como delimitador comia as aspas e
- * entregava um nome adulterado dentro da mensagem de cobrança. É o que o Excel
- * faz, e é o certo: fora do começo da célula, aspas são texto.
- */
-function partirLinha(linha: string, sep: string): string[] {
-  const celulas: string[] = [];
-  let atual = "";
-  let dentro = false;
-  let comecouComAspas = false;
-
-  for (let i = 0; i < linha.length; i++) {
-    const c = linha[i];
-    if (c === '"') {
-      if (dentro) {
-        if (linha[i + 1] === '"') {
-          atual += '"';
-          i++;
-        } else {
-          dentro = false;
-        }
-      } else if (atual === "" && !comecouComAspas) {
-        dentro = true;
-        comecouComAspas = true;
-      } else {
-        atual += c;
-      }
-    } else if (c === sep && !dentro) {
-      celulas.push(atual.trim());
-      atual = "";
-      comecouComAspas = false;
-    } else {
-      atual += c;
-    }
-  }
-  celulas.push(atual.trim());
-  return celulas;
-}
-
-export type Tabela = {
-  cabecalho: string[];
-  linhas: string[][];
-  separador: string;
-  /**
-   * Número da linha **no arquivo original**, 1-based, de cada linha de
-   * `linhas`. Existe porque quem vai corrigir o dado abre o arquivo no Excel,
-   * e lá a contagem inclui o preâmbulo e as linhas em branco. Um número de
-   * linha que não bate com o do editor é pior que nenhum.
-   */
-  numeros: number[];
-  /** Linha do cabeçalho no arquivo original, 1-based. */
-  linhaCabecalho: number;
-  /** Linhas de rodapé de relatório cortadas do fim. */
-  rodapeCortado: number;
-};
-
-/**
- * Acha o cabeçalho, que quase nunca está na primeira linha.
- *
- * Relatório de sistema começa com "Contas a receber / Empresa X / Período
- * 01/07 a 31/07" antes da tabela. A regra que funciona sem adivinhar o
- * conteúdo: **o cabeçalho é a primeira linha cujo número de colunas se repete
- * na linha seguinte.** Preâmbulo tem uma coluna só, ou um número que não se
- * repete; tabela é regular por definição.
- */
-export function lerCsv(texto: string): Tabela | { erro: string } {
-  // O número da linha no arquivo original viaja junto desde aqui. Perdê-lo e
-  // recalculá-lo depois foi o primeiro jeito, e ele errava por uma linha em
-  // todo arquivo com branco no meio do preâmbulo.
-  const cheias = texto
-    .split(/\r\n|\n|\r/)
-    .map((texto, i) => ({ texto, numero: i + 1 }))
-    .filter((l) => l.texto.trim() !== "");
-
-  if (cheias.length < 2) return { erro: "O arquivo tem menos de duas linhas com conteúdo." };
-
-  const separador = acharSeparador(cheias.map((l) => l.texto));
-
-  let inicio = -1;
-  for (let i = 0; i < Math.min(cheias.length - 1, 20); i++) {
-    const cols = partirLinha(cheias[i].texto, separador).length;
-    if (cols < 3) continue;
-    if (partirLinha(cheias[i + 1].texto, separador).length === cols) {
-      inicio = i;
-      break;
-    }
-  }
-
-  if (inicio === -1) {
-    return {
-      erro: `Não achei uma tabela aqui: nenhuma das 20 primeiras linhas tem 3 ou mais colunas separadas por "${separador}" que se repitam na linha seguinte.`,
-    };
-  }
-
-  const cabecalho = partirLinha(cheias[inicio].texto, separador);
-  const corpo = cheias
-    .slice(inicio + 1)
-    .map((l) => ({ celulas: partirLinha(l.texto, separador), numero: l.numero }))
-    .filter((l) => l.celulas.some((v) => v !== ""));
-
-  /*
-    Rodapé de relatório — "Total geral;;;;13.964,56" — tem o mesmo número de
-    colunas da tabela, então cortar por largura não pega. O que o distingue é a
-    densidade: ele preenche duas células de cinco, e uma linha de dado de
-    verdade preenche quase todas.
-
-    Corta só do fim para cima, e por isso: rodapé mora embaixo. Uma linha rala
-    no meio do arquivo é dado ruim, não rodapé — e essa tem que sobreviver até
-    o `agrupar` para virar uma linha explicada na lista de descartadas, em vez
-    de sumir aqui sem ninguém saber.
-  */
-  const minimo = Math.ceil(cabecalho.length / 2);
-  let fim = corpo.length;
-  while (fim > 0 && corpo[fim - 1].celulas.filter((v) => v !== "").length < minimo) fim--;
-
-  return {
-    cabecalho,
-    linhas: corpo.slice(0, fim).map((l) => l.celulas),
-    numeros: corpo.slice(0, fim).map((l) => l.numero),
-    separador,
-    linhaCabecalho: cheias[inicio].numero,
-    rodapeCortado: corpo.length - fim,
-  };
-}
-
 /* ---------------------------------------------------------------- o mapeador */
-
-/** Sem acento, minúsculo, sem pontuação — para comparar cabeçalho com palavra-chave. */
-function achatar(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
 
 /**
  * As palavras que puxam o chute de cada campo, em ordem de força.
@@ -346,6 +188,9 @@ function achatar(s: string): string {
  * devedor` tem que ir para `valor` e não para `devedor` — por isso o casamento
  * é por palavra inteira e a lista de `valor` é consultada antes.
  */
+/** Precedência de consulta do chute — ela é quem decide os empates. */
+const ORDEM_DO_CHUTE: Campo[] = ["vencimento", "valor", "telefone", "devedor", "referencia"];
+
 const PISTAS: Record<Campo, string[]> = {
   vencimento: ["vencimento", "vence", "venc", "dt venc", "data venc", "data de vencimento", "due", "due date"],
   valor: ["valor", "vlr", "saldo devedor", "saldo", "valor devido", "valor em aberto", "total", "debito", "montante", "amount"],
@@ -368,154 +213,11 @@ const PISTAS: Record<Campo, string[]> = {
  * Coluna já tomada não é oferecida de novo.
  */
 export function chutarMapa(cabecalho: string[]): Mapa {
-  const achatado = cabecalho.map(achatar);
-  const mapa: Mapa = { devedor: -1, telefone: -1, vencimento: -1, valor: -1, referencia: -1 };
-  const tomadas = new Set<number>();
-
-  const ordem: Campo[] = ["vencimento", "valor", "telefone", "devedor", "referencia"];
-
-  for (const campo of ordem) {
-    // Duas passadas: igualdade exata primeiro, "contém" depois. Sem isso, uma
-    // coluna chamada "Valor" perde para "Valor do desconto" só por posição.
-    for (const exato of [true, false]) {
-      if (mapa[campo] !== -1) break;
-      for (const pista of PISTAS[campo]) {
-        const i = achatado.findIndex(
-          (h, idx) => !tomadas.has(idx) && (exato ? h === pista : h.includes(pista)),
-        );
-        if (i !== -1) {
-          mapa[campo] = i;
-          tomadas.add(i);
-          break;
-        }
-      }
-    }
-  }
-
-  return mapa;
+  return chutarColunas(cabecalho, PISTAS, CAMPOS, ORDEM_DO_CHUTE);
 }
 
 export function mapaCompleto(mapa: Mapa): boolean {
   return CAMPOS.every((c) => !CAMPO_OBRIGATORIO[c] || mapa[c] !== -1);
-}
-
-/* --------------------------------------------------------------- normalizar */
-
-/**
- * Valor em dinheiro, no formato que vier.
- *
- * A armadilha silenciosa: `Number.parseFloat("1.234,56")` devolve `1.234` sem
- * reclamar. Uma cobrança de mil e duzentos reais vira uma de um real e vinte e
- * três centavos, e nada no caminho acusa.
- *
- * A regra que resolve sem adivinhação: **o último separador é o decimal** —
- * exceto quando há um só ponto seguido de exatamente três dígitos e nenhuma
- * vírgula, que é milhar brasileiro (`1.234`). "10.50" continua sendo dez e
- * cinquenta, e `1.234` continua sendo mil duzentos e trinta e quatro.
- */
-export function normalizarValor(bruto: string): number | null {
-  if (!bruto) return null;
-  // \u00A0 explicito: espaco fino e o que o `toLocaleString` produz, e o que
-  // volta colado no valor quando alguem copia de uma pagina para a planilha.
-  let s = bruto.replace(/\u00A0/g, " ").trim();
-  if (!s) return null;
-
-  // Contábil: parênteses são o sinal negativo.
-  let negativo = false;
-  if (/^\(.*\)$/.test(s)) {
-    negativo = true;
-    s = s.slice(1, -1);
-  }
-  if (s.startsWith("-")) {
-    negativo = true;
-    s = s.slice(1);
-  }
-
-  s = s.replace(/[R$\s]/gi, "");
-  if (!/[0-9]/.test(s)) return null;
-  if (/[^0-9.,]/.test(s)) return null;
-
-  const ultimoPonto = s.lastIndexOf(".");
-  const ultimaVirgula = s.lastIndexOf(",");
-
-  if (ultimoPonto === -1 && ultimaVirgula === -1) {
-    const n = Number(s);
-    return Number.isFinite(n) ? (negativo ? -n : n) : null;
-  }
-
-  const decimal = ultimoPonto > ultimaVirgula ? "." : ",";
-  const casas = s.length - s.lastIndexOf(decimal) - 1;
-
-  // Milhar brasileiro sem centavos: um ponto, três dígitos depois, sem vírgula.
-  const milharSeco = decimal === "." && ultimaVirgula === -1 && casas === 3 && s.indexOf(".") === ultimoPonto;
-
-  const limpo = milharSeco
-    ? s.replace(/\./g, "")
-    : s
-        .split(decimal)
-        .map((parte, i) => (i === 0 ? parte.replace(/[.,]/g, "") : parte))
-        .join(".");
-
-  const n = Number(limpo);
-  if (!Number.isFinite(n)) return null;
-  return negativo ? -n : n;
-}
-
-function diasNoMes(ano: number, mes: number): number {
-  return new Date(Date.UTC(ano, mes, 0)).getUTCDate();
-}
-
-/**
- * Data em qualquer um dos formatos que aparecem no mesmo país, para AAAA-MM-DD.
- *
- * `DD/MM/AAAA` no relatório do sistema, `AAAA-MM-DD` na planilha exportada do
- * Sheets, `AAAAMMDD` em quem copiou do layout de OFX. Ano de dois dígitos vira
- * 20xx até 69 e 19xx daí em diante — a convenção do próprio Excel.
- *
- * **Valida o dia contra o mês.** `31/02/2026` não é uma data e não pode virar
- * 03/03 por rolagem do `Date`, que é o que o construtor faz sozinho.
- */
-export function normalizarData(bruto: string): string | null {
-  if (!bruto) return null;
-  const s = bruto.trim().split(/[\sT]/)[0];
-  if (!s) return null;
-
-  let ano: number, mes: number, dia: number;
-
-  let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(s);
-  if (m) {
-    ano = +m[1];
-    mes = +m[2];
-    dia = +m[3];
-  } else if ((m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/.exec(s))) {
-    dia = +m[1];
-    mes = +m[2];
-    ano = +m[3];
-    if (m[3].length === 2) ano += ano <= 69 ? 2000 : 1900;
-  } else if ((m = /^(\d{4})(\d{2})(\d{2})$/.exec(s))) {
-    ano = +m[1];
-    mes = +m[2];
-    dia = +m[3];
-  } else {
-    return null;
-  }
-
-  if (mes < 1 || mes > 12) return null;
-  if (dia < 1 || dia > diasNoMes(ano, mes)) return null;
-  if (ano < 1900 || ano > 2200) return null;
-
-  return `${ano}`.padStart(4, "0") + "-" + `${mes}`.padStart(2, "0") + "-" + `${dia}`.padStart(2, "0");
-}
-
-/** AAAA-MM-DD de uma Date, em data local — nunca `toISOString`, que é UTC. */
-export function hojeISO(d: Date = new Date()): string {
-  return (
-    `${d.getFullYear()}`.padStart(4, "0") +
-    "-" +
-    `${d.getMonth() + 1}`.padStart(2, "0") +
-    "-" +
-    `${d.getDate()}`.padStart(2, "0")
-  );
 }
 
 /**
@@ -775,15 +477,6 @@ export function agrupar(
 
 /* ---------------------------------------------------------------- o dinheiro */
 
-export function reais(n: number): string {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-export function dataBR(iso: string): string {
-  const [a, m, d] = iso.split("-");
-  return `${d}/${m}/${a}`;
-}
-
 export type Acrescimo = { multa: number; juros: number; total: number };
 
 /**
@@ -968,24 +661,24 @@ export function csvResumo(leitura: Leitura, encargos: Encargos): string {
     "motivo",
   ];
 
-  const escapar = (v: string) => (/[";\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const dinheiro = (n: number) => n.toFixed(2).replace(".", ",");
-
-  const linha = (d: Devedor) =>
+  // Sem escapar aqui: `montarCsv` escapa toda célula, e escapar duas vezes
+  // transforma `SILVA; CIA` em `"""SILVA; CIA"""` dentro do arquivo. Escape
+  // mora num lugar só, e o lugar é o montador.
+  const linha = (d: Devedor): string[] =>
     [
-      escapar(d.nome),
-      escapar(d.telefone.valido ? d.telefone.digitos! : d.telefone.original),
+      d.nome,
+      d.telefone.valido ? d.telefone.digitos! : d.telefone.original,
       String(d.titulos.length),
-      dinheiro(d.total),
-      dinheiro(totalComEncargos(d, encargos)),
+      dinheiroCsv(d.total),
+      dinheiroCsv(totalComEncargos(d, encargos)),
       FAIXA_ROTULO[d.faixa],
       String(d.diasMaiorAtraso),
       d.telefone.valido ? "sim" : "não",
-      escapar(d.telefone.motivo ?? d.telefone.aviso ?? ""),
-    ].join(";");
+      d.telefone.motivo ?? d.telefone.aviso ?? "",
+    ];
 
   const corpo = [...leitura.devedores, ...leitura.semContato].map(linha);
-  return "﻿" + [cabecalho.join(";"), ...corpo].join("\r\n") + "\r\n";
+  return montarCsv(cabecalho, corpo);
 }
 
 /** Total por faixa, na ordem declarada — para o resumo e para a conta que fecha. */
