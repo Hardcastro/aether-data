@@ -39,7 +39,12 @@ export default function Contato() {
       : null,
   ].filter((c): c is { rotulo: string; href: string } => c !== null);
 
-  const calculadora = pecaPorSlug("calculadora-custo");
+  /*
+    Era a calculadora até 10/08. Enterrada — ver o fim de PECAS em
+    lib/manifesto.ts. A porta que sobra é a peça que faz trabalho de verdade
+    com o arquivo de quem chegou, não a que estima o custo dele.
+  */
+  const porta = pecaPorSlug("nota-fiscal-planilha");
 
   return (
     <>
@@ -76,12 +81,12 @@ export default function Contato() {
               peças que faltam. Enquanto ele não existe, prefiro dizer isso a
               deixar um formulário que não entrega em lugar nenhum.
             </p>
-            {calculadora && (
+            {porta && (
               <p>
-                Se você chegou aqui querendo saber quanto custa o processo
-                manual que te trouxe: a conta está aberta e dá para usar agora,
-                sem deixar nenhum dado.{" "}
-                <Link href={rotaDaPeca(calculadora)}>{calculadora.nome} →</Link>
+                Se você chegou aqui com um processo manual em mente, a peça no
+                ar já trabalha: arraste os XML das suas notas e leve a planilha
+                pronta, sem cadastro e sem subir nada.{" "}
+                <Link href={rotaDaPeca(porta)}>{porta.nome} →</Link>
               </p>
             )}
           </section>

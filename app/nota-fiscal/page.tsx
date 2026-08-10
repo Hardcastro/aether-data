@@ -85,11 +85,13 @@ export default function PaginaNotaFiscal() {
             de errar um número que ninguém confere depois. Isto aqui faz os dois primeiros
             passos e mostra exatamente onde o terceiro precisa acontecer.
           </p>
-          <p>
-            <Link className="btn-secundario" href="/calculadora">
-              Quanto isso custa por mês →
-            </Link>
-          </p>
+          {/*
+            Aqui havia um link para /calculadora ("Quanto isso custa por mês").
+            A peça foi enterrada em 10/08 — ver o comentário no fim de PECAS em
+            lib/manifesto.ts. Quando a /cobranca existir, é ela que entra neste
+            lugar: o pé de uma peça aponta para a próxima rotina manual, não
+            para uma estimativa.
+          */}
           <Link className="btn-secundario" href="/automacoes">
             ← Ver as automações no ar
           </Link>

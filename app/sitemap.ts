@@ -47,7 +47,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     /*
       As peças internas (06/08) têm rota de verdade além do cartão na vitrine —
-      /calculadora e, depois, /chat, /leitura, /resumo-semanal. Cada uma tem
+      /nota-fiscal e, depois, /cobranca, /conciliacao, /monitor. Cada uma tem
       metadata e canonical próprios, então cada uma é página indexável por si.
       Prioridade acima das variações de vitrine porque é a URL que circula em
       proposta.

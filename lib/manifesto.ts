@@ -6,7 +6,7 @@ export type Grupo = "puxa" | "entrega" | "consulta" | "responde";
  * encontra a competência. Competência continua sendo o eixo do portfólio; ela
  * só deixou de ser a porta de entrada, porque é vocabulário nosso e não dele.
  *
- * O mapeamento é o mesmo do `plano-portfolio.md`: S1–S4 são `site`, C1–C4 são
+ * O mapeamento é o mesmo do `plano-portfolio.md`: S1–S4 são `site`, N2–N5 são
  * `automacao`. Não confundir com `interna` — hoje as duas listas coincidem,
  * mas `interna` responde "onde a peça mora" (rota daqui ou projeto na Vercel) e
  * `tipo` responde "o que a peça é". Uma automação hospedada fora continuaria
@@ -31,8 +31,8 @@ export type Peca = {
   tipo: Tipo;
   url: string;
   /**
-   * Peça que mora dentro deste próprio site, em rota própria (/calculadora,
-   * /chat...), em vez de num projeto separado na Vercel. Muda duas coisas e
+   * Peça que mora dentro deste próprio site, em rota própria (/nota-fiscal,
+   * /cobranca...), em vez de num projeto separado na Vercel. Muda duas coisas e
    * nada mais: `url` é caminho relativo, e os links para ela não abrem em aba
    * nova — mandar o visitante para outra aba dentro do mesmo site é ruído.
    *
@@ -135,14 +135,17 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     apoio: "Painel, busca, agenda",
   },
   /*
-    Grupo novo, 06/08. As quatro peças de ponto de contato (calculadora, chat,
-    leitura por e-mail, resumo semanal) têm em comum uma capacidade que os três
-    grupos antigos não descrevem: responder sem ninguém do outro lado. Elas não
-    puxam dado de fonte alheia, não entregam para um destinatário combinado
-    antes, e não deixam um acervo consultável — reagem a quem chegou agora.
+    Grupo novo, 06/08, para uma capacidade que os três grupos antigos não
+    descrevem: responder sem ninguém do outro lado. Não puxa dado de fonte
+    alheia, não entrega para um destinatário combinado antes, e não deixa um
+    acervo consultável — reage sozinho ao que chegou agora.
 
     O nome é capacidade, não seção de site, para não furar o eixo declarado do
     plano ("capacidade, não negócio").
+
+    Está vazio desde 10/08, quando a calculadora foi enterrada. Volta com o
+    monitor (`/monitor`, `brief-14`), que é a peça que responde de verdade sem
+    ninguém clicar. Grupo vazio não é desenhado — ver GRUPOS_COM_PECAS.
   */
   responde: {
     chave: "responde",
@@ -241,30 +244,19 @@ export const PECAS: Peca[] = [
       "E o que veio de foto nunca se disfarça de documento. O XML gerado sai sem assinatura e sem protocolo da SEFAZ, com o aviso escrito dentro dele; a tabela marca campo a campo o que o modelo leu com dúvida em vez de preencher com algo plausível; e abrir a linha põe a foto original ao lado dos campos, para conferir e corrigir ali. Um número transcrito errado entrando na contabilidade de alguém é o dano real desta categoria de ferramenta, e cada uma dessas decisões existe contra ele.",
     ],
   },
-  {
-    slug: "calculadora-custo",
-    nome: "Quanto custa o que você faz na mão",
-    capacidade:
-      "Três perguntas e a conta aberta na tela — cada fator editável, o número muda enquanto se digita",
-    grupo: "responde",
-    // A C4 do plano — primeira das quatro peças de ponto de contato. É a única
-    // automação no ar hoje; C1 (/chat), C2 (/leitura) e C3 (/resumo-semanal)
-    // entram aqui conforme forem construídas, e a vitrine de automações
-    // preenche sozinha.
-    tipo: "automacao",
-    // Rosa profundo: a quinta família de cor, longe do teal e do azul de
-    // "puxa", do roxo de "entrega" e do âmbar de "consulta".
-    cor: { inner: "#8a0b4f", mid: "#4e042a", outer: "#14010a" },
-    imagem: "/prints/calculadora-custo.png",
-    url: "/calculadora",
-    interna: true,
-    repo: "https://github.com/Hardcastro/aether-data",
-    stack: ["Next.js", "Sem servidor", "Vercel"],
-    oQueProva: [
-      "Quem chega cético em automação fica mais cético diante de um número sem explicação — então a conta não fica escondida atrás do resultado. Os três fatores aparecem na tela, editáveis, e o total se refaz a cada tecla. Dá para discordar de um fator específico e ver o número mudar, em vez de aceitar ou desconfiar do resultado inteiro.",
-      "E ela é a peça que prova que nem toda automação precisa de modelo de linguagem para ser útil: o cálculo inteiro acontece no navegador, sem chamada de servidor, sem chave de API e sem custo por uso. Funciona igual com a rede caindo depois que a página abriu.",
-    ],
-  },
+  /*
+    A `calculadora-custo` (/calculadora) morava aqui e foi enterrada em
+    10/08/2026 — ver `plano-portfolio.md`, "⚠ A N1 sai". Ela era a última
+    sobrevivente do eixo de 05/08 e reprovava nos mesmos dois testes que
+    mataram C1, C2 e C3: se ela parar, nenhum negócio para, e ela não vira
+    ativo reutilizável para cliente nenhum. Uma calculadora do custo do
+    trabalho manual vende a AEther; ela não faz o trabalho de quem compra.
+
+    No lugar dela entra a `/cobranca` (`brief-15`), que roda no arquivo de
+    contas a receber do próprio visitante. Enquanto ela não existe, o grupo
+    `responde` fica sem peça e GRUPOS_COM_PECAS o esconde sozinho — regra do
+    vazio, sem nenhuma outra mudança.
+  */
 ];
 
 /** A peça que abre o site quando a URL não pede nenhuma. */
