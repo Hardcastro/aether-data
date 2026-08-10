@@ -1,4 +1,4 @@
-export type Grupo = "puxa" | "entrega" | "consulta" | "responde";
+export type Grupo = "puxa" | "confere" | "entrega" | "consulta" | "responde";
 
 /**
  * O corte de 07/08: o visitante escolhe primeiro pelo que ele sabe sobre si
@@ -124,6 +124,32 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     titulo: "Puxa dado de onde ele está",
     apoio: "Planilha, catálogo, sistema do cliente, documento",
   },
+  /*
+    Grupo de 10/08. A pergunta estava aberta desde o `brief-11`, que a deixou
+    explicitamente como decisão dele: conciliação não é `puxa` (puxa duas
+    coisas e compara) nem `entrega`, e "confere o que não bate" é capacidade
+    própria — que é o eixo declarado do portfólio inteiro.
+
+    **O argumento que ganhou é o do conjunto, não o desta peça.** Com `confere`
+    no lugar, as quatro automações passam a carregar uma competência cada —
+    `puxa` (nota-fiscal), `confere` (conciliação), `entrega` (cobrança) e
+    `responde` (monitor). É a demonstração mais limpa da tese declarada do
+    portfólio, e ela só existe porque nenhuma peça foi empilhada num grupo que
+    já tinha dono. O contra, dito em voz alta: grupo com uma peça só descreve a
+    peça, não uma competência.
+
+    Fica logo depois de `puxa` porque a ordem das chaves aqui é a ordem em que
+    os grupos aparecem, e a sequência lê como o caminho do dado: puxa, confere,
+    entrega, deixa consultável, responde sozinho.
+
+    Nasce vazio e por isso invisível — a `/conciliacao` (`brief-11`) é a
+    primeira peça dele. Ver GRUPOS_COM_PECAS.
+  */
+  confere: {
+    chave: "confere",
+    titulo: "Confere o que não bate",
+    apoio: "Conciliação, cadastro duplicado, o que sumiu entre dois sistemas",
+  },
   entrega: {
     chave: "entrega",
     titulo: "Entrega para alguém",
@@ -135,22 +161,25 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     apoio: "Painel, busca, agenda",
   },
   /*
-    Grupo novo, 06/08, para uma capacidade que os três grupos antigos não
-    descrevem: responder sem ninguém do outro lado. Não puxa dado de fonte
-    alheia, não entrega para um destinatário combinado antes, e não deixa um
-    acervo consultável — reage sozinho ao que chegou agora.
+    Nasceu em 06/08 para as quatro peças de ponto de contato. As quatro
+    morreram — C1, C2 e C3 em 07/08, a calculadora em 10/08 — e o grupo ficou
+    vazio, invisível pela regra do vazio.
 
-    O nome é capacidade, não seção de site, para não furar o eixo declarado do
-    plano ("capacidade, não negócio").
+    **Sobrevive com dono novo:** o monitor (`/monitor`, `brief-14`) é a única
+    peça do portfólio que roda sem ninguém clicar, que é o que "responde
+    sozinho" sempre quis dizer. Decisão dele em 10/08, no fecho do `brief-11`,
+    e ela **sobrepõe o próprio `brief-14`**, que tinha escrito `entrega`
+    ("o apoio já diz relatório recorrente"). O argumento é do conjunto: com o
+    monitor aqui, as quatro automações carregam uma competência cada.
 
-    Está vazio desde 10/08, quando a calculadora foi enterrada. Volta com o
-    monitor (`/monitor`, `brief-14`), que é a peça que responde de verdade sem
-    ninguém clicar. Grupo vazio não é desenhado — ver GRUPOS_COM_PECAS.
+    O apoio foi reescrito na mesma data. O antigo — "Cálculo na hora, conversa,
+    leitura automática" — descrevia o chat, a leitura por e-mail e a
+    calculadora. Nenhum dos três existe.
   */
   responde: {
     chave: "responde",
     titulo: "Responde sozinho",
-    apoio: "Cálculo na hora, conversa, leitura automática",
+    apoio: "Regra que dispara, aviso agendado, registro do que rodou",
   },
 };
 
@@ -280,10 +309,10 @@ export const PECAS: Peca[] = [
     ativo reutilizável para cliente nenhum. Uma calculadora do custo do
     trabalho manual vende a AEther; ela não faz o trabalho de quem compra.
 
-    No lugar dela entra a `/cobranca` (`brief-15`), que roda no arquivo de
-    contas a receber do próprio visitante. Enquanto ela não existe, o grupo
-    `responde` fica sem peça e GRUPOS_COM_PECAS o esconde sozinho — regra do
-    vazio, sem nenhuma outra mudança.
+    No lugar dela entrou a `/cobranca` (`brief-15`), construída no mesmo dia,
+    que roda no arquivo de contas a receber do próprio visitante — e mora em
+    `entrega`, não em `responde`. O grupo que ela esvaziou fica vazio e
+    invisível até o monitor entrar; ver o comentário de `responde` em GRUPOS.
   */
 ];
 
