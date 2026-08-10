@@ -1317,6 +1317,462 @@ body:has(.ferramenta) {
   color: var(--muted-color);
 }
 
+/* ------------------------------------------------ cobrança → mensagens (brief-15) */
+
+/*
+  Prefixo `.cb-`, e o motivo já custou uma parada real: em 06/08 a classe
+  `.campo` da calculadora colidiu com a `.campo` do campo de partículas do Hero
+  — mesmo nome, mesma especificidade, o cascade funde as duas e os campos do
+  formulário viraram `position: absolute; inset: 0`, empilhados um sobre o
+  outro. Peça nova nasce com prefixo próprio, sem exceção.
+*/
+
+.cb {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cb-aviso {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+}
+.cb-aviso strong {
+  color: var(--text-color);
+}
+
+/* ----------------------------------------------------------------- a entrada */
+
+.cb-solta {
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.18);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.cb-solta.arrastando {
+  border-color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.06);
+}
+/*
+  O input não some com `display: none` — some com uma caixa de 1px opaca. O
+  primeiro esconde o controle da navegação por teclado junto com a pintura, e o
+  <label> vira uma área clicável que o Tab não alcança.
+*/
+.cb-entrada {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.cb-rotulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+}
+.cb-entrada:focus-visible + .cb-rotulo {
+  outline: 2px solid var(--text-color);
+  outline-offset: 4px;
+  border-radius: 22px;
+}
+.cb-rotulo-forte {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.cb-rotulo-fraco {
+  font-size: 0.82rem;
+  color: var(--muted-color);
+}
+.cb-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.cb-erro {
+  border: 1px solid rgba(255, 140, 120, 0.45);
+  background: rgba(120, 20, 10, 0.25);
+  border-radius: 16px;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------- o mapeador */
+
+.cb-mapa,
+.cb-resumo,
+.cb-cartao,
+.cb-bloco {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 1.5rem;
+}
+.cb-mapa,
+.cb-resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.cb-mapa-cabeca h2,
+.cb-secao {
+  font-family: var(--font-display, inherit);
+  font-size: 1.35rem;
+  margin: 0 0 0.4rem;
+}
+.cb-mapa-cabeca p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+  margin: 0;
+}
+
+.cb-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem;
+}
+.cb-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cb-campo-rotulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.cb-opcional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cb-campo select,
+.cb-parametros input {
+  font-family: var(--font-main);
+  font-size: 0.92rem;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+.cb-campo select option {
+  /* Menu nativo é pintado pelo sistema: sem isto o texto sai branco no branco. */
+  color: #14010a;
+  background: #f5f0f2;
+}
+
+.cb-previa-rolo {
+  overflow-x: auto;
+}
+.cb-previa {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.78rem;
+}
+.cb-previa th,
+.cb-previa td {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.cb-previa th {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cb-previa th.cb-col-usada {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.07);
+}
+.cb-col-marca {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+}
+.cb-mapa-acoes,
+.cb-resumo-acoes,
+.cb-cartao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.cb-nota {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+  margin: 0;
+}
+
+/* ----------------------------------------------------------------- o resumo */
+
+.cb-resumo-linhas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.8rem;
+}
+.cb-resumo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.cb-resumo-faixa {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-color);
+}
+.cb-resumo-valor {
+  font-size: 1.15rem;
+}
+.cb-resumo-quantos {
+  font-size: 0.76rem;
+  color: var(--muted-color);
+}
+
+.cb-fecha {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cb-fecha.nao {
+  color: #ffb4a2;
+}
+
+.cb-parametros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.cb-parametros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+  min-width: 8rem;
+  flex: 1 1 8rem;
+}
+.cb-parametros input[disabled] {
+  opacity: 0.45;
+}
+
+/* ---------------------------------------------------------- blocos dobráveis */
+
+.cb-bloco summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.cb-bloco-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding-top: 1rem;
+}
+.cb-liga {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+.cb-alerta {
+  border: 1px solid rgba(255, 200, 120, 0.45);
+  background: rgba(120, 80, 10, 0.22);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 0;
+}
+.cb-texto-faixa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.cb-texto-faixa h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cb-texto-faixa label,
+.cb-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  color: var(--muted-color);
+}
+.cb-texto-faixa textarea,
+.cb-editor textarea {
+  font-family: var(--font-main);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+  resize: vertical;
+}
+.cb-editor {
+  gap: 0.6rem;
+  padding-top: 0.4rem;
+}
+
+/* --------------------------------------------------------------- os cartões */
+
+.cb-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cb-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.cb-cartao-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.cb-cartao-cabeca h3 {
+  font-family: var(--font-display, inherit);
+  font-size: 1.2rem;
+  margin: 0 0 0.2rem;
+}
+.cb-cartao-linha {
+  font-size: 0.85rem;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cb-cartao-tel {
+  font-size: 0.82rem;
+  color: var(--muted-color);
+  margin: 0;
+  text-align: right;
+}
+.cb-cartao-aviso {
+  display: block;
+  font-size: 0.72rem;
+  color: #ffd9a2;
+}
+.cb-faixa {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.cb-faixa-60mais {
+  border-color: rgba(255, 150, 130, 0.55);
+  color: #ffb4a2;
+}
+.cb-faixa-a-vencer {
+  border-color: rgba(160, 230, 170, 0.45);
+  color: #b6e8bd;
+}
+
+.cb-titulos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cb-titulos li {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(7rem, auto) 1fr;
+  gap: 0.4rem 1rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 0.82rem;
+}
+.cb-titulo-ref {
+  font-weight: 600;
+}
+.cb-titulo-encargo {
+  color: var(--muted-color);
+  font-size: 0.9em;
+}
+.cb-titulo-dias {
+  color: var(--muted-color);
+  text-align: right;
+}
+
+/* -------------------------------------------------- recusas e descartes */
+
+.cb-recusas {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+}
+.cb-recusas th,
+.cb-recusas td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.cb-recusas th {
+  color: var(--muted-color);
+  font-weight: 600;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cb-mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.9em;
+}
+.cb-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .ferramenta {
     padding-top: 7.5rem;
@@ -1330,6 +1786,31 @@ body:has(.ferramenta) {
   }
   .nf-exportar button {
     width: 100%;
+  }
+  .cb-mapa,
+  .cb-resumo,
+  .cb-cartao,
+  .cb-bloco {
+    padding: 1.1rem;
+    border-radius: 18px;
+  }
+  /*
+    Três colunas em 360px espremem "venceu em 28/05/2026 · 74 dias" até a
+    rolagem lateral. Empilhar é a degradação certa: a informação é a mesma, e a
+    ordem de leitura já é documento → valor → prazo.
+  */
+  .cb-titulos li {
+    grid-template-columns: 1fr;
+  }
+  .cb-titulo-dias {
+    text-align: left;
+  }
+  .cb-cartao-tel {
+    text-align: left;
+  }
+  .cb-cartao-acoes .btn-primario {
+    width: 100%;
+    text-align: center;
   }
 }
 
