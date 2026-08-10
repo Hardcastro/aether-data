@@ -238,10 +238,38 @@ export const PECAS: Peca[] = [
     url: "/nota-fiscal",
     interna: true,
     repo: "https://github.com/Hardcastro/aether-data",
-    stack: ["Next.js", "DOMParser", "Claude (visão)", "pdf.js"],
+    // "Gemini", não "Claude": o fornecedor foi trocado em 07/08 (commit 8af5216,
+    // `gemini-3.6-flash` por fetch direto) e este chip ficou três dias mentindo
+    // na vitrine. Achado em 10/08, durante o enterro da calculadora.
+    stack: ["Next.js", "DOMParser", "Gemini (visão)", "pdf.js"],
     oQueProva: [
       "O processo inteiro da pilha de papel, nos dois verbos que ele tem: digitalizar e planilhar. A foto entra, vira um XML no layout que os sistemas importam, e o XML vira linha de planilha. Quem já tem o XML pula o primeiro estágio — esse caminho não sobe nada, porque nota já digital não precisa que ninguém olhe para ela.",
       "E o que veio de foto nunca se disfarça de documento. O XML gerado sai sem assinatura e sem protocolo da SEFAZ, com o aviso escrito dentro dele; a tabela marca campo a campo o que o modelo leu com dúvida em vez de preencher com algo plausível; e abrir a linha põe a foto original ao lado dos campos, para conferir e corrigir ali. Um número transcrito errado entrando na contabilidade de alguém é o dano real desta categoria de ferramenta, e cada uma dessas decisões existe contra ele.",
+    ],
+  },
+  {
+    slug: "cobranca-mensagens",
+    nome: "A lista de quem deve vira as mensagens prontas",
+    capacidade:
+      "CSV de contas a receber vira uma mensagem por devedor, com o link do WhatsApp já preenchido — e sem link nenhum para telefone que não passa no crivo",
+    grupo: "entrega",
+    // Primeira automação do grupo `entrega`: até 10/08 ele carregava só o
+    // formulário da S1, que é site. O apoio dele sempre disse "entrega para um
+    // destinatário combinado antes" — é exatamente o que uma cobrança é.
+    tipo: "automacao",
+    // Rosa profundo, herdado da calculadora enterrada — e por método, não por
+    // sentimentalismo: com ela fora, as peças e vertentes ocupam os matizes 6,
+    // 46, 108, 171, 206, 249 e 281, e a maior lacuna do círculo volta a ser
+    // 281→6, com 85 de largura. O meio dela é ~324, que é onde este tom está.
+    cor: { inner: "#8a0b4f", mid: "#4e042a", outer: "#14010a" },
+    imagem: "/prints/cobranca-mensagens.png",
+    url: "/cobranca",
+    interna: true,
+    repo: "https://github.com/Hardcastro/aether-data",
+    stack: ["Next.js", "Sem servidor", "Sem chave", "Vercel"],
+    oQueProva: [
+      "Relatório de contas a receber não tem formato: NF-e tem schema, OFX tem especificação, e o export do seu sistema chama a mesma coluna de Cliente, Sacado ou RAZAO_SOCIAL. Então a peça não adivinha — ela chuta pelo cabeçalho, mostra o chute com as três primeiras linhas do arquivo ao lado, e deixa você corrigir em cinco menus. Por baixo, o leitor aguenta o que o arquivo real traz: vírgula decimal, windows-1252, data em três formatos e o cabeçalho do relatório antes da tabela.",
+      "E ela recusa três coisas de propósito. Não dispara sozinha — cada botão abre uma conversa, e quem aperta enviar é você. Não preenche juros nem multa por conta própria, porque não conhece o seu contrato. E telefone que não passa no crivo — DDD que não existe, celular sem o nono dígito, campo vazio — não ganha link nenhum: vai para uma lista à parte com o motivo escrito. Um número errado não é dado ruim numa planilha, é uma acusação de dívida entregue a quem não deve nada.",
     ],
   },
   /*
