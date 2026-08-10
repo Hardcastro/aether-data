@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import {
   baixarArquivo,
   baixarCsv,
@@ -176,7 +176,7 @@ function paraCampo(v: string | number | null, decimais: number | null): string {
 
 /* ---------------------------------------------------------------- componente */
 
-export function NotaFiscal() {
+export function NotaFiscal({ fotoLigada }: { fotoLigada: boolean }) {
   const [notas, setNotas] = useState<Nota[]>([]);
   /** dataURL da foto que originou cada nota, por id. Só existe para origem imagem. */
   const [imagens, setImagens] = useState<Record<string, string>>({});
@@ -184,21 +184,17 @@ export function NotaFiscal() {
   const [fila, setFila] = useState<Fila>(null);
   const [arrastando, setArrastando] = useState(false);
   const [aberta, setAberta] = useState<string | null>(null);
-  /** null enquanto não perguntamos. A via de foto só é anunciada se existir. */
-  const [imagemLigada, setImagemLigada] = useState<boolean | null>(null);
   const idCampo = useId();
   const entrada = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let vivo = true;
-    fetch("/api/transcrever")
-      .then((r) => r.json())
-      .then((d) => vivo && setImagemLigada(Boolean(d?.ligado)))
-      .catch(() => vivo && setImagemLigada(false));
-    return () => {
-      vivo = false;
-    };
-  }, []);
+  /*
+    Vem do servidor como prop, não de um fetch daqui. Antes este componente
+    perguntava a `/api/transcrever` depois de montar, o que trazia dois
+    problemas: um piscar entre estados, e — pior — o cabeçalho da página, que é
+    server component, não tinha como saber e prometia a via de foto mesmo com
+    ela desligada.
+  */
+  const imagemLigada = fotoLigada;
 
   const engolir = useCallback(
     async (arquivos: File[]) => {
@@ -346,7 +342,20 @@ export function NotaFiscal() {
             nomeado: alguma coisa precisa olhar. Ela é reduzida aqui, enviada para
             transcrição, e não fica guardada em lugar nenhum.
           </p>
-        ) : null}
+        ) : (
+          /*
+            Falha honesta, e é a mesma regra da S1: quando a entrega não é
+            possível, dizer que não é — em vez de sumir e deixar quem chegou
+            achando que a peça nunca teve essa via. Some quando a chave existir,
+            e aí nenhum visitante vê este parágrafo.
+          */
+          <p className="nf-desligado">
+            <strong>A leitura de foto está desligada neste ambiente.</strong> Falta a
+            variável <code>GEMINI_API_KEY</code> no projeto. A via existe e está construída
+            — o que você vê abaixo é a peça funcionando pela metade, de propósito, em vez de
+            aceitar uma foto e falhar depois de você esperar.
+          </p>
+        )}
         <p>
           <strong>O XML sai — e, se você já tiver um, ele também entra.</strong> Nota que já
           está em XML não precisa ser lida por ninguém: os campos vêm nomeados dentro do

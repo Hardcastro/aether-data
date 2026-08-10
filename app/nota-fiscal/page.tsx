@@ -36,6 +36,20 @@ export const metadata: Metadata = {
 };
 
 export default function PaginaNotaFiscal() {
+  /*
+    Lido aqui, no servidor, e descido como booleano — nunca a chave. É o mesmo
+    padrão que o layout já usa para MARCA.email: o valor fica no servidor, o
+    cliente recebe só o "existe ou não".
+
+    Fazer isso aqui em vez de perguntar por fetch no cliente conserta duas
+    coisas de uma vez: some o piscar entre "carregando" e o estado real, e o
+    **texto de cabeçalho passa a saber**. Sem isso a página se contradizia em
+    produção — o subtítulo prometia "fotografe a pilha" e o único campo abaixo
+    aceitava só .xml, sem uma palavra de explicação. Prometer na manchete e
+    calar no controle é pior que não ter a via.
+  */
+  const fotoLigada = Boolean(process.env.GEMINI_API_KEY);
+
   return (
     <>
       <style>{`:root:root{--bg-inner:${PECA.cor.inner};--bg-mid:${PECA.cor.mid};--bg-outer:${PECA.cor.outer}}`}</style>
@@ -45,13 +59,23 @@ export default function PaginaNotaFiscal() {
           <p className="ferramenta-grupo">Puxa dado de onde ele está</p>
           <h1 className="ferramenta-titulo">{PECA.nome}</h1>
           <p className="ferramenta-linha">
-            Fotografe a pilha. Cada nota vira um XML e uma linha de planilha, e cada campo
-            que o modelo não leu com clareza chega marcado — para você conferir com a foto
-            do lado e corrigir ali mesmo.
+            {fotoLigada ? (
+              <>
+                Fotografe a pilha. Cada nota vira um XML e uma linha de planilha, e cada
+                campo que o modelo não leu com clareza chega marcado — para você conferir
+                com a foto do lado e corrigir ali mesmo.
+              </>
+            ) : (
+              <>
+                Arraste os XML das suas notas e leve a planilha pronta. A leitura de{" "}
+                <strong>foto</strong> — que transforma a pilha de papel em XML antes de
+                virar planilha — está construída, mas não ligada neste ambiente.
+              </>
+            )}
           </p>
         </div>
 
-        <NotaFiscal />
+        <NotaFiscal fotoLigada={fotoLigada} />
 
         <div className="ferramenta-pe">
           <p>
