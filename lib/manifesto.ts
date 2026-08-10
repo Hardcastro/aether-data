@@ -301,6 +301,31 @@ export const PECAS: Peca[] = [
       "E ela recusa três coisas de propósito. Não dispara sozinha — cada botão abre uma conversa, e quem aperta enviar é você. Não preenche juros nem multa por conta própria, porque não conhece o seu contrato. E telefone que não passa no crivo — DDD que não existe, celular sem o nono dígito, campo vazio — não ganha link nenhum: vai para uma lista à parte com o motivo escrito. Um número errado não é dado ruim numa planilha, é uma acusação de dívida entregue a quem não deve nada.",
     ],
   },
+  {
+    slug: "conciliacao-extrato-planilha",
+    nome: "O que não bate entre o extrato e a planilha",
+    capacidade:
+      "Extrato e lançamentos cruzados em quatro listas — casou, provável par, só de um lado, só do outro — e a peça prova, na tela, que nenhuma linha sumiu no caminho",
+    grupo: "confere",
+    // A peça que torna público o quinto grupo. `confere` foi declarado em 10/08
+    // e nasceu vazio: `GRUPOS_COM_PECAS` não desenha grupo sem peça, então até
+    // aqui ele existia no código e não na vitrine. Com esta entrada, cada uma
+    // das automações carrega uma competência diferente, que é a tese do site.
+    tipo: "automacao",
+    // Verde-esmeralda. Com as sete peças e as duas vertentes nos matizes 6, 46,
+    // 98, 171, 206, 249, 281 e 324, a maior lacuna que sobra é 98→171, de 73 de
+    // largura. O meio dela é ~140, que é onde este tom está.
+    cor: { inner: "#0b8a35", mid: "#044e1e", outer: "#011408" },
+    imagem: "/prints/conciliacao-extrato-planilha.png",
+    url: "/conciliacao",
+    interna: true,
+    repo: "https://github.com/Hardcastro/aether-data",
+    stack: ["Next.js", "Sem servidor", "Sem chave", "Vercel"],
+    oQueProva: [
+      "O que separa um conciliador de um INNER JOIN é o que ele faz com o que não casou exato. A venda de sexta que cai na conta na segunda, a taxa do gateway que come R$ 1,37 e o boleto pago com duas semanas de atraso não são exceções — são a maior parte do trabalho, e um casamento só exato devolve quarenta órfãos e não serve. Aqui elas viram uma quarta lista de prováveis pares, cada um com o motivo escrito em português e nenhum declarado como casado. Três caminhos chegam nela: data deslocada, valor reduzido, e o mesmo número de documento dos dois lados — este sem janela e sem tolerância, porque identidade não decai com o tempo. A janela e a tolerância ficam na tela: aperte a janela para um dia e veja pares desaparecerem, que é como alguém que chegou desconfiado passa a confiar no resto.",
+      "E a peça confere a si mesma na frente de quem olha. Antes de desenhar qualquer tabela ela soma: toda linha lida caiu em exatamente uma lista, e o total distribuído bate ao centavo com o total do arquivo, dos dois lados. Quando não fecha, ela diz que não fechou em vez de mostrar um resultado bonito — motor de comparação erra engolindo uma linha duas vezes ou perdendo uma, e essas duas falhas são invisíveis numa tela cheia de números certos. A mesma conta atravessa o CSV de saída, que leva todas as linhas dos dois arquivos e não só as que sobraram.",
+    ],
+  },
   /*
     A `calculadora-custo` (/calculadora) morava aqui e foi enterrada em
     10/08/2026 — ver `plano-portfolio.md`, "⚠ A N1 sai". Ela era a última

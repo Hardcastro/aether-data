@@ -1773,6 +1773,500 @@ body:has(.ferramenta) {
   white-space: nowrap;
 }
 
+/* --------------------------------------- extrato × planilha (brief-11) */
+
+/*
+  Prefixo `.cc-`, pela mesma regra que criou o `.cb-`: peça nova nasce com
+  namespace próprio, sem exceção. Em 06/08 uma classe `.campo` da calculadora
+  colidiu com a `.campo` do campo de partículas do Hero e os campos do
+  formulário viraram `position: absolute; inset: 0`.
+
+  Não reaproveitei o bloco `.cb-` apesar da semelhança visível, e a decisão é
+  deliberada: renomear classe em CSS é a única mudança deste repositório que o
+  compilador **não** cobre — `next build` e `tsc` passam limpos com um
+  `className` apontando para regra que não existe mais. A lição é de 10/08,
+  quando apagar o bloco `.calc*` por prefixo quase levou junto três botões da
+  /nota-fiscal. Mexer numa peça no ar para economizar CSS numa peça nova troca
+  um custo visível por um risco invisível.
+*/
+
+.cc {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cc-aviso {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+}
+.cc-aviso strong {
+  color: var(--text-color);
+}
+
+/* ------------------------------------------------------- as duas entradas */
+
+/*
+  Dois campos lado a lado, e é o único lugar do hub onde isso acontece. A peça
+  não funciona com um arquivo só, e pôr um embaixo do outro faria parecer que
+  o segundo é opcional.
+*/
+.cc-entradas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+.cc-entrada-caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.cc-entrada-titulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+.cc-solta {
+  position: relative;
+  border: 1px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.18);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.cc-solta.arrastando {
+  border-color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.06);
+}
+/*
+  O input não some com `display: none` — some com uma caixa de 1px opaca. O
+  primeiro esconde o controle da navegação por teclado junto com a pintura, e o
+  <label> vira uma área clicável que o Tab não alcança.
+*/
+.cc-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.cc-rotulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2.2rem 1.2rem;
+  text-align: center;
+  cursor: pointer;
+}
+.cc-input:focus-visible + .cc-rotulo {
+  outline: 2px solid var(--text-color);
+  outline-offset: 4px;
+  border-radius: 22px;
+}
+.cc-rotulo-forte {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+.cc-rotulo-fraco {
+  font-size: 0.8rem;
+  color: var(--muted-color);
+  line-height: 1.5;
+}
+.cc-atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+.cc-erro {
+  border: 1px solid rgba(255, 140, 120, 0.45);
+  background: rgba(120, 20, 10, 0.25);
+  border-radius: 16px;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* -------------------------------------------------------- painéis e títulos */
+
+.cc-mapa,
+.cc-painel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.cc-mapa-cabeca h2,
+.cc-secao {
+  font-family: var(--font-display, inherit);
+  font-size: 1.35rem;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.cc-mapa-cabeca p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+  margin: 0.4rem 0 0;
+}
+.cc-contagem {
+  font-family: var(--font-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 100px;
+  padding: 0.2rem 0.65rem;
+}
+.cc-total {
+  font-family: var(--font-main);
+  font-size: 0.84rem;
+  color: var(--muted-color);
+}
+.cc-nota {
+  font-size: 0.85rem;
+  line-height: 1.65;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cc-fraco {
+  color: var(--muted-color);
+  font-weight: 400;
+}
+.cc-vazio {
+  font-size: 0.88rem;
+  color: var(--muted-color);
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.2);
+}
+.cc-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+}
+.cc-alerta {
+  border: 1px solid rgba(255, 200, 120, 0.45);
+  background: rgba(120, 80, 10, 0.22);
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- o mapeador */
+
+.cc-mapa-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--glass-border);
+}
+.cc-mapa-lado-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+}
+.cc-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem;
+}
+.cc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cc-campo-rotulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.cc-opcional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cc-campo select,
+.cc-parametros input {
+  font-family: var(--font-main);
+  font-size: 0.92rem;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+.cc-campo select option {
+  /* Menu nativo é pintado pelo sistema: sem isto o texto sai branco no branco. */
+  color: #14010a;
+  background: #f5f0f2;
+}
+.cc-previa {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.76rem;
+}
+.cc-previa th,
+.cc-previa td {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.42rem 0.6rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.cc-previa th {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cc-previa th.cc-col-usada {
+  color: var(--text-color);
+  background: rgba(255, 255, 255, 0.07);
+}
+.cc-col-marca {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+}
+
+/* ------------------------------------------------------------ a aritmética */
+
+/*
+  O crivo da soma é a primeira coisa da tela e tem borda própria: quando ele
+  falha, a página inteira precisa mudar de cor antes que alguém leia uma tabela
+  acreditando nela.
+*/
+.cc-crivo {
+  border-left: 3px solid rgba(140, 220, 160, 0.7);
+}
+.cc-crivo.nao {
+  border-left-color: #ffb4a2;
+  background: rgba(120, 20, 10, 0.18);
+}
+.cc-crivo-lados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+.cc-crivo-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.cc-crivo-nome {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cc-crivo-linha {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0;
+  color: var(--muted-color);
+}
+.cc-crivo-linha strong {
+  color: var(--text-color);
+}
+
+.cc-parametros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+.cc-parametros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+  min-width: 8rem;
+  flex: 1 1 8rem;
+}
+
+/* --------------------------------------------------------- o provável par */
+
+/*
+  Duas linhas emparelhadas, nunca uma linha de sete colunas.
+
+  Sete colunas com duas de texto livre é a armadilha do <td> que custou uma
+  parada na /nota-fiscal em 07/08: `max-width` numa célula é ignorado com
+  `table-layout: auto`, a tabela estica e a coluna de valor — a que a pessoa
+  veio ver — nasce fora da área visível. Grid de dois blocos não tem esse
+  problema e cai para uma coluna sozinho no celular.
+*/
+.cc-pares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.cc-par {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 1rem 1.1rem;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.cc-par-lados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.9rem;
+}
+.cc-par-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.cc-par-etiqueta {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-color);
+  margin: 0;
+}
+.cc-par-corpo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0;
+}
+.cc-par-data {
+  font-size: 0.9rem;
+  color: var(--muted-color);
+}
+.cc-par-valor {
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cc-par-desc {
+  font-size: 0.85rem;
+  color: var(--muted-color);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cc-par-motivo {
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ---------------------------------------------------------------- tabelas */
+
+.cc-rolo {
+  overflow-x: auto;
+}
+.cc-tabela {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.84rem;
+}
+.cc-tabela th,
+.cc-tabela td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+.cc-tabela th {
+  color: var(--muted-color);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.cc-tabela .cc-num {
+  text-align: right;
+  white-space: nowrap;
+}
+/*
+  O corte da descrição precisa de um bloco de verdade dentro da célula —
+  `max-width` no próprio <td> é sugestão com `table-layout: auto`, e foi
+  exatamente isso que esticou a tabela da /nota-fiscal.
+*/
+.cc-corte {
+  display: block;
+  max-width: 26rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-descartadas {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--muted-color);
+}
+.cc-descartadas strong {
+  color: var(--text-color);
+}
+
+/* ------------------------------------------------------- os casados, dobrados */
+
+.cc-dobra summary {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cc-dobra summary::marker {
+  color: var(--muted-color);
+}
+.cc-dobra[open] summary {
+  margin-bottom: 0.6rem;
+}
+
 @media (max-width: 640px) {
   .ferramenta {
     padding-top: 7.5rem;
