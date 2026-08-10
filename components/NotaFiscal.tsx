@@ -145,6 +145,7 @@ async function transcrever(imagem: string, arquivo: string): Promise<Nota | Recu
     valorTotal: n.valorTotal ?? null,
     itens: Array.isArray(n.itens) ? n.itens : [],
     incertos: Array.isArray(n.incertos) ? n.incertos : [],
+    avisos: Array.isArray(n.avisos) ? n.avisos : [],
   };
 }
 
@@ -625,6 +626,18 @@ function Linha({
               ) : null}
 
               <div className="nf-campos">
+                {/*
+                  Os avisos vêm antes dos campos porque explicam o que as
+                  marcas querem dizer. `incertos` diz qual campo; isto diz por
+                  quê — e "o modelo não leu com clareza" não é a mesma coisa
+                  que "o dígito verificador reprovou".
+                */}
+                {nota.avisos.map((a, i) => (
+                  <p className="nf-aviso-leitura" key={i}>
+                    {a}
+                  </p>
+                ))}
+
                 {editavel ? (
                   <p className="nf-campos-titulo">
                     Corrigir apaga a marca — a marca quer dizer &quot;o modelo não leu isto com

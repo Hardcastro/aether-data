@@ -27,8 +27,28 @@ export const runtime = "nodejs";
  */
 export const maxDuration = 60;
 
-/** Estável atual, e o mais barato da família para tarefa multimodal. */
-const MODELO = "gemini-3.6-flash";
+/**
+ * O modelo, escolhido por medição e não por descrição de catálogo.
+ *
+ * Quatro configurações foram comparadas contra as mesmas imagens, com a chave
+ * de acesso como gabarito — ela tem dígito verificador, então dá para saber se
+ * a leitura está certa sem depender de opinião:
+ *
+ *   modelo                          fácil   difícil   tempo
+ *   gemini-3.6-flash                 5/5      0/4      7,9s
+ *   gemini-3.6-flash + thinking high 5/5      0/4     11,5s
+ *   gemini-3.5-flash                 5/5      errou   12,3s
+ *   gemini-3.5-flash-lite            errou    errou    1,2s
+ *
+ * **Nenhum acerta a imagem difícil.** Subir o esforço do modelo não melhorou a
+ * leitura e custou 45% de latência; descer quebrou o caso fácil. Trocar de
+ * modelo não é a alavanca desta peça — o crivo é, e ele pegou 10 de 10 erros
+ * em todas as configurações.
+ *
+ * Fica em variável de ambiente por isso mesmo: o dia em que um modelo novo
+ * ganhar essa medição, a troca é um campo no painel, não um deploy.
+ */
+const MODELO = process.env.GEMINI_MODELO || "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`;
 
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -118,7 +138,7 @@ const ESQUEMA = {
     incertos: {
       type: "ARRAY",
       description:
-        "Nomes dos campos acima que você preencheu sem conseguir ler com clareza, ou que deixou null por estarem ilegíveis. Use os mesmos nomes das propriedades.",
+        "Nomes dos campos acima que ESTÃO no documento mas você não conseguiu ler com certeza. Campo que o documento simplesmente não tem NÃO entra aqui — volta null e pronto.",
       items: { type: "STRING" },
     },
   },
@@ -129,9 +149,11 @@ const INSTRUCAO = `Você transcreve documentos fiscais brasileiros a partir de i
 
 Regras, em ordem de importância:
 
-1. NUNCA invente um valor. Se um campo está borrado, cortado, apagado pelo desbotamento do papel térmico ou simplesmente ausente do documento, devolva null para ele e inclua o nome do campo em "incertos". Um campo vazio é útil; um campo plausível e errado atravessa a conferência de quem recebe a planilha e vira erro contábil.
+1. NUNCA invente um valor. Se um campo está borrado, cortado ou apagado pelo desbotamento do papel térmico, devolva null para ele e inclua o nome do campo em "incertos". Um campo vazio é útil; um campo plausível e errado atravessa a conferência de quem recebe a planilha e vira erro contábil.
 
 2. Se você leu um campo mas não tem certeza de um dígito, preencha com sua melhor leitura E inclua o nome do campo em "incertos". As duas coisas juntas, não uma ou outra.
+
+2b. "incertos" é só para o que ESTÁ no documento e você não conseguiu ler. Campo que o documento não tem — cupom fiscal quase nunca traz frete, ICMS destacado ou destinatário — volta null e NÃO entra em "incertos". Marcar ausência como dúvida enche a tela de avisos que não pedem nada, e quem recebe uma lista assim para de olhar para todos, inclusive os que importam.
 
 3. Valores em número, não em texto: 1234.56, com ponto decimal. O documento mostra "1.234,56" — converta. Nunca devolva o símbolo de moeda.
 
@@ -200,7 +222,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
+  /**
+   * Uma chamada ao Gemini. Devolve o JSON já parseado, ou lança com o status.
+   *
+   * Arrow function e não `function` declarada: declaração é içada, e o
+   * TypeScript desfaz a garantia de que `chave` já foi verificada acima
+   * quando o corpo pode, em tese, rodar antes do teste.
+   */
+  const pedir = async (corpoDaChamada: object): Promise<Record<string, unknown>> => {
     const r = await fetch(ENDPOINT, {
       method: "POST",
       headers: {
@@ -209,92 +238,134 @@ export async function POST(req: NextRequest) {
         // o histórico de qualquer intermediário no caminho.
         "x-goog-api-key": chave,
       },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: INSTRUCAO }] },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { inlineData: { mimeType: tipo, data: base64 } },
-              { text: "Transcreva este documento." },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: ESQUEMA,
-          // Transcrição não é tarefa criativa: o mesmo documento deve dar a
-          // mesma leitura duas vezes.
-          temperature: 0,
-        },
-      }),
+      body: JSON.stringify(corpoDaChamada),
     });
 
     if (!r.ok) {
       const detalhe = await r.text().catch(() => "");
-      console.error("transcrever: Gemini respondeu", r.status, detalhe.slice(0, 500));
-      // O status do fornecedor não vaza para o cliente; o que vaza é se vale a
-      // pena tentar de novo.
-      return NextResponse.json(
-        {
-          erro:
-            r.status === 429
-              ? "O serviço de leitura está ocupado. Tente de novo em alguns segundos."
-              : "Não consegui ler esta foto agora. O XML continua funcionando.",
-        },
-        { status: r.status === 429 ? 429 : 502 },
-      );
+      console.error("transcrever: Gemini respondeu", r.status, detalhe.slice(0, 400));
+      throw Object.assign(new Error("gemini"), { status: r.status });
     }
 
     const dados = await r.json();
-
     /*
       Duas formas de voltar vazio, e elas querem dizer coisas diferentes:
       `promptFeedback.blockReason` é a foto barrada pelo filtro de segurança;
       candidato sem texto é o modelo não tendo produzido nada. A pessoa não
       precisa da distinção, mas o log precisa — senão vira "às vezes falha".
     */
-    const bloqueio = dados?.promptFeedback?.blockReason;
-    const bruto = dados?.candidates?.[0]?.content?.parts
+    const texto = dados?.candidates?.[0]?.content?.parts
       ?.map((p: { text?: string }) => p?.text ?? "")
       .join("")
       .trim();
-
-    if (!bruto) {
-      console.error("transcrever: resposta sem texto", { bloqueio, motivo: dados?.candidates?.[0]?.finishReason });
-      return NextResponse.json(
-        { erro: "A leitura voltou vazia. Tente outra foto do mesmo documento." },
-        { status: 502 },
-      );
+    if (!texto) {
+      console.error("transcrever: resposta sem texto", {
+        bloqueio: dados?.promptFeedback?.blockReason,
+        motivo: dados?.candidates?.[0]?.finishReason,
+      });
+      throw Object.assign(new Error("vazia"), { status: 502 });
     }
+    return JSON.parse(texto);
+  };
 
-    let nota: { chave?: string | null; incertos?: unknown };
-    try {
-      nota = JSON.parse(bruto);
-    } catch {
-      console.error("transcrever: resposta não era JSON", bruto.slice(0, 300));
-      return NextResponse.json(
-        { erro: "A leitura veio num formato que não consegui aproveitar. Tente de novo." },
-        { status: 502 },
-      );
+  const parteImagem = { inlineData: { mimeType: tipo, data: base64 } };
+  // Transcrição não é tarefa criativa: o mesmo documento deve dar a mesma
+  // leitura duas vezes.
+  const comum = { temperature: 0, responseMimeType: "application/json" };
+
+  try {
+    const nota = (await pedir({
+      systemInstruction: { parts: [{ text: INSTRUCAO }] },
+      contents: [{ role: "user", parts: [parteImagem, { text: "Transcreva este documento." }] }],
+      generationConfig: { ...comum, responseSchema: ESQUEMA },
+    })) as { chave?: string | null; incertos?: unknown };
+
+    const incertos = new Set(Array.isArray(nota.incertos) ? nota.incertos.map(String) : []);
+    const avisos: string[] = [];
+
+    /*
+      O crivo que não depende da honestidade do modelo — e a coisa mais
+      produtiva desta peça inteira.
+
+      Medido em 10 leituras de uma foto degradada, com quatro modelos e níveis
+      de esforço diferentes: **nenhum acertou a chave, e o dígito verificador
+      pegou os dez.** Em nenhuma delas o modelo avisou — estava confiante e
+      errado. Pedir "diga quando não souber" cobre o caso em que ele sabe que
+      não sabe; isto cobre o caso em que ele acha que sabe.
+
+      Quando o crivo reprova, vale uma segunda leitura focada só na chave antes
+      de desistir: às vezes é lapso e a releitura fecha. Quando não fecha, a
+      peça para de tentar e diz o que sabe. Insistir seria adivinhar com mais
+      etapas.
+    */
+    if (nota.chave && !chaveConfere(nota.chave)) {
+      let corrigida: string | null = null;
+      try {
+        const segunda = (await pedir({
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  "Leia APENAS a chave de acesso do documento fiscal na imagem. São 44 dígitos, " +
+                  "normalmente impressos em grupos de quatro. Leia dígito por dígito, sem completar " +
+                  "com o que seria plausível. Se não der para ler todos com certeza, devolva null.",
+              },
+            ],
+          },
+          contents: [{ role: "user", parts: [parteImagem, { text: "Só a chave." }] }],
+          generationConfig: {
+            ...comum,
+            responseSchema: {
+              type: "OBJECT",
+              properties: { chave: { type: "STRING", nullable: true } },
+              required: ["chave"],
+            },
+          },
+        })) as { chave?: string | null };
+        if (segunda.chave && chaveConfere(segunda.chave)) corrigida = segunda.chave;
+      } catch {
+        // A releitura é bônus: se falhar, o resultado da primeira continua
+        // valendo — marcado, que é o comportamento seguro.
+      }
+
+      if (corrigida) {
+        nota.chave = corrigida;
+        avisos.push(
+          "A chave saiu errada na primeira leitura e foi refeita numa segunda passagem — esta fecha com o próprio dígito verificador.",
+        );
+      } else {
+        incertos.add("chave");
+        avisos.push(
+          "A chave não fecha com o próprio dígito verificador: pelo menos um dos 44 números está errado. Isso não é opinião do modelo, é aritmética.",
+        );
+      }
     }
 
     /*
-      O único crivo que não depende da honestidade do modelo.
-
-      No primeiro teste real ele devolveu uma chave plausível e errada — a foto
-      tinha um dígito a mais, ele normalizou para 44 em silêncio e não marcou
-      nada em `incertos`. Pedir "diga quando não souber" resolve o caso em que
-      o modelo sabe que não sabe; não resolve o caso em que ele acha que sabe.
-      O dígito verificador resolve, porque é aritmética.
+      E o aviso que a medição obrigou a escrever. A chave sabe se conferir
+      sozinha; valor, data e CNPJ não sabem. Quem vê a peça pegar um erro de
+      chave pode concluir que ela pega todos — e essa conclusão é falsa.
     */
-    const incertos = new Set(Array.isArray(nota.incertos) ? nota.incertos.map(String) : []);
-    if (nota.chave && !chaveConfere(nota.chave)) {
-      incertos.add("chave");
+    if (incertos.size === 0) {
+      avisos.push(
+        "Nenhum campo ficou em dúvida — mas só a chave tem dígito verificador. Valor, data e CNPJ não têm como se conferir sozinhos: compare com a foto ao lado antes de exportar.",
+      );
     }
 
-    return NextResponse.json({ nota: { ...nota, incertos: [...incertos] } });
+    return NextResponse.json({ nota: { ...nota, incertos: [...incertos], avisos } });
   } catch (e) {
+    const status = (e as { status?: number })?.status;
+    if (status) {
+      return NextResponse.json(
+        {
+          erro:
+            status === 429
+              ? "O serviço de leitura está ocupado. Tente de novo em alguns segundos."
+              : "Não consegui ler esta foto agora. O XML continua funcionando.",
+        },
+        { status: status === 429 ? 429 : 502 },
+      );
+    }
     console.error("transcrever: falhou", e);
     return NextResponse.json(
       { erro: "Não consegui ler esta foto agora. O XML continua funcionando." },

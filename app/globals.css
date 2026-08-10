@@ -1287,6 +1287,15 @@ body:has(.ferramenta) {
   gap: 1rem;
   min-width: 0;
 }
+/* O porquê da marca, antes dos campos. Explica o que "confira" quer dizer
+   naquela nota — e a explicação não é sempre a mesma. */
+.nf-aviso-leitura {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.7rem;
+}
 .nf-campos-titulo {
   font-size: 0.76rem;
   line-height: 1.5;

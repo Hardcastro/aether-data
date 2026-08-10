@@ -61,6 +61,15 @@ export type Nota = {
    * campo nomeado. É a lista que pinta o "confira" na tela.
    */
   incertos: string[];
+  /**
+   * Frases prontas para quem está conferindo, escritas pela rota de leitura.
+   *
+   * Existe porque `incertos` diz *qual* campo, e não *por quê* — e os porquês
+   * não são equivalentes. "O modelo não leu com clareza" é opinião dele;
+   * "a chave não fecha com o próprio dígito verificador" é aritmética, e
+   * merece outra frase. Vazio para nota que veio de XML.
+   */
+  avisos: string[];
 };
 
 export type Recusa = {
@@ -278,6 +287,9 @@ export function lerXmlNfe(conteudo: string, arquivo: string): Nota | Recusa {
     valorTotal: numero(total, "vNF"),
     itens,
     incertos,
+    avisos: transcrito
+      ? ["Este XML foi gerado a partir de uma foto por esta mesma peça — não é documento fiscal."]
+      : [],
   };
 }
 
