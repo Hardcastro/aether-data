@@ -326,6 +326,47 @@ export const PECAS: Peca[] = [
       "E a peça confere a si mesma na frente de quem olha. Antes de desenhar qualquer tabela ela soma: toda linha lida caiu em exatamente uma lista, e o total distribuído bate ao centavo com o total do arquivo, dos dois lados. Quando não fecha, ela diz que não fechou em vez de mostrar um resultado bonito — motor de comparação erra engolindo uma linha duas vezes ou perdendo uma, e essas duas falhas são invisíveis numa tela cheia de números certos. A mesma conta atravessa o CSV de saída, que leva todas as linhas dos dois arquivos e não só as que sobraram.",
     ],
   },
+  {
+    slug: "monitor-com-regra",
+    nome: "O aviso que chega antes de você perguntar",
+    capacidade:
+      "Uma regra sobre um indicador público, avaliada na hora e depois todo dia sozinha — com o registro de todas as rodadas aberto na página, e um número que confere esse registro contra o calendário",
+    grupo: "responde",
+    // A peça que torna público o quinto e último grupo. `responde` ficou vazio
+    // quando a calculadora foi enterrada em 10/08 e a regra do vazio o tirou da
+    // vitrine. Com esta entrada, as quatro automações carregam uma competência
+    // cada — puxa, confere, entrega, responde — que é a tese do site.
+    tipo: "automacao",
+    // Verde-limão. Com as oito peças e as duas vertentes nos matizes 7, 45, 98,
+    // 140, 171, 208, 249, 278 e 328, a maior lacuna que sobra é 45→98, de 53 de
+    // largura, e o meio dela é 72.
+    //
+    // Vale registrar que a régua está no fim: com dez matizes ocupados a média
+    // é 36 de espaçamento, e esta entrada fica a 27 dos dois vizinhos — o par
+    // mais apertado do sistema. A regra "um matiz por peça, sempre na maior
+    // lacuna" sobreviveu às dez; a décima primeira precisa de outro critério.
+    cor: { inner: "#708a0b", mid: "#3f4e06", outer: "#101401" },
+    /**
+     * Nulo de propósito, e é a única peça assim. O print só pode ser tirado
+     * **depois** de a peça rodar alguns dias em produção: a metade de cima da
+     * tela é o registro de execuções, e um print tirado agora mostraria as
+     * rodadas do dublê da conferência.
+     *
+     * O `brief-14` escreve, em "Fora desta peça", que registro semeado é
+     * registro falso — e um print de registro semeado na vitrine é a mesma
+     * mentira num lugar mais visível. Até lá o painel desenha o espaço
+     * reservado com o nome da peça, que é o comportamento correto.
+     */
+    imagem: null,
+    url: "/monitor",
+    interna: true,
+    repo: "https://github.com/Hardcastro/aether-data",
+    stack: ["Next.js", "Cron", "Redis", "Resend", "Vercel"],
+    oQueProva: [
+      "Uma automação agendada tem um problema de prova que nenhuma outra peça tem: quando ela funciona, nada acontece. O e-mail que não chegou porque nada mudou é indistinguível do e-mail que não chegou porque o agendador morreu — e é por isso que o produto desta peça não é o e-mail, é o registro público de todas as rodadas, inclusive as silenciosas e as que falharam. Só que registro prova por acúmulo, e ninguém lê trinta linhas contando dias de cabeça. Então a peça conta sozinha, no topo da tela: dias corridos desde a primeira rodada, rodadas registradas, e quantos buracos. Uma rodada que não aconteceu vira número, não vira lacuna que alguém precisa reparar. É a única alegação deste site inteiro que dá para verificar sem confiar em mim.",
+      "E ela responde antes de pedir qualquer coisa. A regra é avaliada contra o valor de hoje no instante em que você termina de escrever — e, de quebra, contra os dois anos de histórico que a fonte já traz: quantas vezes essa regra teria disparado, e se a resposta for nenhuma, ela diz isso e sugere o valor que teria disparado. Uma peça que vende inscrição para um alerta que nunca vai chegar não é útil, é só um cadastro a mais. O e-mail, quando existe, sai uma vez por travessia e não todo dia — a regra guarda o último estado, então uma Selic que passa do seu limite e fica trinta dias acima manda um aviso, não trinta.",
+    ],
+  },
   /*
     A `calculadora-custo` (/calculadora) morava aqui e foi enterrada em
     10/08/2026 — ver `plano-portfolio.md`, "⚠ A N1 sai". Ela era a última
