@@ -24,21 +24,48 @@ import { chaveRegra } from "./monitor";
  */
 
 /**
- * Dois nomes possíveis para a mesma coisa, e aceitar os dois não é preguiça.
+ * Achar as credenciais sem depender do nome exato da variável — e isso não é
+ * frouxidão, é a resposta a uma coisa que a Vercel faz e que ninguém controla.
  *
- * A integração da Upstash pelo Marketplace da Vercel injeta as credenciais
- * sozinha, e o par que ela escreve depende de quando a conta foi criada:
- * quem veio do Vercel KV migrado tem `KV_REST_API_URL`/`KV_REST_API_TOKEN`,
- * instalações novas tendem a `UPSTASH_REDIS_REST_*`. Ler só um dos pares
- * significaria a peça subir com o armazém desligado **em silêncio** — a rota
- * funciona, a regra do vazio esconde a inscrição, e nada na tela diz que o
- * motivo é o nome de uma variável.
+ * A integração da Upstash pelo Marketplace injeta as credenciais sozinha, e o
+ * nome varia em duas dimensões:
  *
- * Esse é o pior tipo de falha para esta peça em particular, porque ela é a
- * que existe para não deixar dúvida entre "nada aconteceu" e "está quebrado".
+ * 1. **O par.** Instalações antigas (vindas do Vercel KV migrado em dez/2024)
+ *    escrevem `KV_REST_API_URL`/`KV_REST_API_TOKEN`; outras escrevem
+ *    `UPSTASH_REDIS_REST_*`.
+ * 2. **O prefixo.** Quando o projeto tem mais de um store conectado, a Vercel
+ *    prefixa tudo: `st1_KV_REST_API_URL`, `st2_...`, e assim por diante. O
+ *    número depende da ordem em que os stores foram criados, ou seja: de um
+ *    histórico que o código não tem como saber.
+ *
+ * Ler um nome fixo faria a peça subir com o armazém desligado **em silêncio** —
+ * a rota funciona, a regra do vazio esconde a inscrição, e nada na tela diz
+ * que o motivo é o nome de uma variável de ambiente. É o pior tipo de falha
+ * possível justamente nesta peça, que existe para não deixar dúvida entre
+ * "nada aconteceu" e "está quebrado".
+ *
+ * O casamento é por **sufixo com fronteira** (`_NOME`), nunca por `includes`.
+ * Sem a fronteira, `KV_REST_API_READ_ONLY_TOKEN` seria aceito no lugar do
+ * token de escrita, e a peça leria o registro sem nunca conseguir escrever
+ * nele — falharia só na hora da rodada, longe daqui. É a mesma armadilha do
+ * `includes` que já custou uma conferência em 10/08, quando "12 dias de
+ * diferença" passou como "2 dias de diferença".
  */
-const URL_BASE = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+function credencial(...nomes: string[]): string | undefined {
+  for (const nome of nomes) {
+    const direto = process.env[nome];
+    if (direto) return direto;
+  }
+  for (const nome of nomes) {
+    for (const [chave, valor] of Object.entries(process.env)) {
+      if (valor && chave.endsWith(`_${nome}`)) return valor;
+    }
+  }
+  return undefined;
+}
+
+const URL_BASE = credencial("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL");
+const TOKEN = credencial("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN");
 
 const CHAVE_REGRAS = "monitor:regras";
 const CHAVE_REGISTRO = "monitor:registro";
