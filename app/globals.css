@@ -2445,3 +2445,331 @@ body:has(.ferramenta) {
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   .mn-* — a N4, /monitor (brief-14).
+
+   Rota de ferramenta de largura padrão (46rem, não a `.ferramenta-larga`): o
+   conteúdo mais largo daqui é uma linha de registro, que é texto corrido. As
+   duas peças anteriores precisaram de 74rem por causa de tabela — esta não tem
+   nenhuma, e herdar a largura maior só afastaria as palavras.
+
+   A ordem visual segue a ordem decidida no brief e não deve ser reorganizada
+   sem reabrir aquela decisão: crivo, ferramenta, tradução, registro,
+   inscrição. O formulário de e-mail é a última coisa da página de propósito.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.mn {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.mn-bloco,
+.mn-crivo,
+.mn-traducao {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 1.5rem;
+}
+
+.mn-bloco,
+.mn-traducao {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mn-subtitulo {
+  font-family: var(--font-display, inherit);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+/* ── o crivo: uma linha, número grande, antes de tudo ────────────────────── */
+
+.mn-crivo {
+  border-color: rgba(255, 255, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/*
+  Quando o registro não fecha com o calendário, a moldura muda. É a única
+  mudança de cor por estado desta peça, e ela existe porque o número é o
+  argumento inteiro: um buraco que se lê igual a um dia cheio não prova nada.
+*/
+.mn-crivo-furado {
+  border-color: rgba(255, 190, 120, 0.55);
+  background: rgba(255, 190, 120, 0.08);
+}
+
+.mn-crivo-frase {
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+  line-height: 1.3;
+}
+
+.mn-crivo-apoio {
+  color: var(--muted-color);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.mn-crivo-menor .mn-crivo-frase {
+  font-size: 1.05rem;
+}
+
+/* ── a regra ─────────────────────────────────────────────────────────────── */
+
+.mn-regra {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.9rem;
+}
+
+.mn-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mn-campo-rotulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.mn-unidade {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mn-campo select,
+.mn-campo input {
+  font-family: var(--font-main);
+  font-size: 0.92rem;
+  color: var(--text-color);
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  width: 100%;
+}
+
+.mn-campo select option {
+  /* Menu nativo é pintado pelo sistema: sem isto sai branco no branco. */
+  color: #101401;
+  background: #f2f5ec;
+}
+
+.mn-base {
+  color: var(--muted-color);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* ── a resposta ──────────────────────────────────────────────────────────── */
+
+.mn-resposta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 1rem;
+  min-height: 6.5rem;
+}
+
+.mn-resposta[aria-busy="true"] {
+  opacity: 0.55;
+}
+
+.mn-veredito {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.mn-veredito-sim {
+  color: #d8f5a8;
+}
+.mn-veredito-nao {
+  color: var(--muted-color);
+}
+.mn-veredito-indefinido {
+  color: #ffd9a8;
+}
+
+.mn-explicacao,
+.mn-contrafactual {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.mn-contrafactual {
+  color: var(--muted-color);
+}
+
+.mn-procedencia {
+  font-size: 0.78rem;
+  color: var(--muted-color);
+  letter-spacing: 0.01em;
+}
+
+.mn-nota,
+.mn-miudo {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted-color);
+}
+
+.mn-erro {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #ffc9c9;
+}
+
+.mn-ok {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.mn-vazio {
+  color: var(--muted-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ── a tradução ──────────────────────────────────────────────────────────── */
+
+/*
+  A ponte do indicador público para o número de quem lê. Sem ela o contratante
+  entende o mecanismo, não consegue traduzir para a empresa dele, e fecha a
+  aba — foi o furo achado na segunda leitura de 11/08, e nenhuma linha de
+  código o revelava. Por isso ela tem peso visual de seção e não de rodapé.
+*/
+.mn-traducao {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mn-traducao p {
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--muted-color);
+}
+
+.mn-traducao strong {
+  color: var(--text-color);
+}
+
+/* ── o registro ──────────────────────────────────────────────────────────── */
+
+.mn-registro {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.mn-rodada {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  color: var(--muted-color);
+}
+
+.mn-rodada:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.mn-rodada-falha {
+  color: #ffc9c9;
+}
+
+/* ── a inscrição, por último ─────────────────────────────────────────────── */
+
+.mn-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.mn-form .mn-campo {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.mn-form-linha {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+}
+
+.mn-form-linha strong {
+  color: var(--text-color);
+}
+
+/*
+  `.btn-primario` nasceu no Hero para <a> e não zera fundo, borda nem família
+  de fonte — num link não há o que zerar. Em <button> o navegador repõe os
+  três. A parada já foi paga em 07/08 na /nota-fiscal; aqui ela é só evitada.
+*/
+.mn-form .btn-primario {
+  font-family: var(--font-main);
+  border: 0;
+  cursor: pointer;
+}
+
+.mn-form .btn-primario[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mn-retorno {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.mn-lista-seca {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+}
+
+.mn-lista-seca li {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--muted-color);
+  padding-left: 1rem;
+  border-left: 2px solid var(--glass-border);
+}
+
+.mn-lista-seca strong {
+  color: var(--text-color);
+}
+
+@media (max-width: 560px) {
+  .mn-regra {
+    grid-template-columns: 1fr;
+  }
+  .mn-rodada {
+    font-size: 0.74rem;
+  }
+}
