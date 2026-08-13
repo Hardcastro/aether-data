@@ -23,8 +23,22 @@ import { chaveRegra } from "./monitor";
  * padrão da via de foto da N2 sem `GEMINI_API_KEY`.
  */
 
-const URL_BASE = process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Dois nomes possíveis para a mesma coisa, e aceitar os dois não é preguiça.
+ *
+ * A integração da Upstash pelo Marketplace da Vercel injeta as credenciais
+ * sozinha, e o par que ela escreve depende de quando a conta foi criada:
+ * quem veio do Vercel KV migrado tem `KV_REST_API_URL`/`KV_REST_API_TOKEN`,
+ * instalações novas tendem a `UPSTASH_REDIS_REST_*`. Ler só um dos pares
+ * significaria a peça subir com o armazém desligado **em silêncio** — a rota
+ * funciona, a regra do vazio esconde a inscrição, e nada na tela diz que o
+ * motivo é o nome de uma variável.
+ *
+ * Esse é o pior tipo de falha para esta peça em particular, porque ela é a
+ * que existe para não deixar dúvida entre "nada aconteceu" e "está quebrado".
+ */
+const URL_BASE = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 
 const CHAVE_REGRAS = "monitor:regras";
 const CHAVE_REGISTRO = "monitor:registro";
