@@ -425,6 +425,38 @@ function diferencaEmDias(deIso: string, ateIso: string): number {
 }
 
 /**
+ * A hora agendada em `vercel.json` (`"0 9 * * *"`, UTC) mais a folga do plano
+ * Hobby, onde o disparo cai em qualquer minuto da hora marcada. Passadas essas
+ * 10 horas do dia, a rodada daquele dia **era devida**.
+ *
+ * Se este número divergir do `vercel.json`, o crivo passa a acusar buraco que
+ * não existe — ou a esconder buraco que existe. São o mesmo fato escrito em
+ * dois lugares, e não há como o compilador ligar um ao outro.
+ */
+const HORA_DEVIDA_UTC = 9 + 1;
+
+/**
+ * O último dia cuja rodada já era devida.
+ *
+ * **Sem isto o crivo acusa um buraco falso toda madrugada.** O dia de hoje
+ * entra em "dias corridos" à meia-noite, mas a rodada dele só acontece às 06h
+ * — então entre 00h e 07h a conta sempre fecha com um buraco a mais, e a
+ * moldura fica âmbar dizendo "faltou rodada" quando não faltou nada. Seis
+ * horas por dia, um quarto do tempo, no número que é o argumento inteiro da
+ * peça. Achado olhando a peça em produção, em 14/08, às 01h43.
+ *
+ * A conta é em UTC de propósito: o disparo é agendado em UTC, e uma rodada das
+ * 09h UTC cai sempre no mesmo dia do calendário em São Paulo (09−3 = 06), então
+ * os dois jeitos de datar concordam para toda rodada agendada.
+ */
+function ultimoDiaDevido(agoraIso: string): string {
+  const agora = new Date(agoraIso);
+  if (Number.isNaN(agora.getTime())) return agoraIso.slice(0, 10);
+  const recuado = new Date(agora.getTime() - HORA_DEVIDA_UTC * 3_600_000);
+  return recuado.toISOString().slice(0, 10);
+}
+
+/**
  * O crivo. Rodada manual não entra na conta dos dois lados — ela não prova
  * agendamento nenhum, e deixá-la contar permitiria "consertar" um buraco
  * clicando um botão, que é exatamente o que este número existe para impedir.
@@ -445,7 +477,12 @@ export function conferirCalendario(registro: Rodada[], agoraIso: string): Crivo 
     };
   }
 
-  const hoje = diaBrasilia(agoraIso);
+  /**
+   * O corte não é "hoje", é **o último dia cuja rodada já era devida** — ver
+   * `ultimoDiaDevido`. Usar "hoje" fazia a peça acusar buraco toda madrugada,
+   * entre a virada do dia e a hora do disparo.
+   */
+  const hoje = ultimoDiaDevido(agoraIso);
 
   /**
    * Rodada com data posterior a hoje **não conta**. Em produção ela não
