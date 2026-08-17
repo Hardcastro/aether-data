@@ -457,8 +457,15 @@ body {
   transform-style: preserve-3d;
 }
 
+/*
+  42vw → 40vw. O painel é absoluto e centralizado, então o que sobra para as
+  duas colunas é `(92vw − largura do painel) / 2` — e é dessa conta que sai a
+  largura do trilho da direita. A 42vw o trilho não comportava os quatro
+  cartões das vitrines sem invadir o painel; 2vw devolvem ~29px por lado a
+  partir de 1440 e nada acima de 1520 (lá vence o teto de 38rem).
+*/
 .painel {
-  width: min(38rem, 42vw);
+  width: min(38rem, 40vw);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -600,6 +607,22 @@ body {
 
 /* coluna direita — seletor + nome do projeto ativo */
 
+/*
+  Os 480px fixos eram a origem da colisão mais séria desta tela.
+
+  `.hero-centro` é absoluto: ele não empurra ninguém, passa por cima. O trilho
+  da direita, ancorado na borda e largo demais, encostava no painel — e a fila
+  de cartões, que é `flex` alinhada à direita, transbordava PARA A ESQUERDA
+  quando os itens eram quatro (4×155 + 3×16 = 668px num trilho de 480). Medido
+  em 1201/1280/1440: nas duas vitrines os dois primeiros cartões caíam inteiros
+  dentro do painel (155×166px de sobreposição), com o nome da peça ilegível por
+  cima do print, e o display do canto invadia mais 120–180px. Só a partir de
+  ~1520 sobrava espaço e o defeito sumia sozinho.
+
+  A largura agora é a folga real ao lado do painel, e não um número herdado: o
+  trilho não tem como encostar nele em largura nenhuma. Os 2rem são o corredor
+  entre os dois.
+*/
 .hero-right {
   display: flex;
   flex-direction: column;
@@ -609,7 +632,7 @@ body {
   height: 100%;
   padding: 6rem 0;
   z-index: 100;
-  width: 480px;
+  width: min(480px, calc((92vw - min(38rem, 40vw)) / 2 - 2rem));
   pointer-events: none;
 }
 
@@ -621,10 +644,36 @@ body {
   pointer-events: auto;
 }
 
+/*
+  Grade de duas colunas, não fila. Numa fila os quatro cartões das vitrines
+  pediam 668px de trilho — mais do que existe ao lado do painel em qualquer
+  largura abaixo de ~1900. Em 2×2 o bloco mede 326px e cabe folgado; com dois
+  itens (a home) a grade rende uma linha só, exatamente o desenho de antes.
+
+  `row-gap` de 3.5rem não é respiro: o disco sobe 32px acima do topo do cartão
+  (padding 5rem contra margem −7rem), então com o gap de 1rem os discos da
+  segunda linha entrariam por dentro dos cartões da primeira.
+
+  `minmax(0, 155px)` guarda o teto de 155px — o valor que o comentário do
+  `.cartao` justifica — e deixa a coluna encolher com o trilho em vez de
+  estourar. `justify-content: end` mantém tudo ancorado na borda.
+*/
 .seletor-cartoes {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 155px));
+  justify-content: end;
+  column-gap: 1rem;
+  row-gap: 3.5rem;
   list-style: none;
+}
+/*
+  O item de grade estica na altura da linha e o botão preenche o item: os
+  quatro cartões passam a ter a mesma altura mesmo com rótulos de tamanhos
+  diferentes — na fila anterior, "Cardápio que o dono edita numa planilha"
+  deixava seu cartão 14px mais alto que o vizinho, e a fileira ficava torta.
+*/
+.seletor-cartoes > li {
+  display: flex;
 }
 
 .cartao {
@@ -639,12 +688,12 @@ body {
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   /*
-    155px, não os 135px da referência: lá o rótulo é "Diet Classic", duas
-    palavras curtas. Aqui é "Cardápio que o dono edita numa planilha" — o
-    nome em português comum que o brief pediu — e a 135px ele quebra em
-    quatro linhas apertadas.
+    Preenche a coluna da grade. O teto de 155px — e não os 135px da
+    referência, onde o rótulo é "Diet Classic" e não "Cardápio que o dono
+    edita numa planilha" — mudou de lugar: agora vive em
+    `.seletor-cartoes`, junto do resto do desenho da grade.
   */
-  width: 155px;
+  width: 100%;
   position: relative;
   backdrop-filter: blur(10px);
   text-align: center;
@@ -2316,12 +2365,24 @@ body:has(.ferramenta) {
   visível só para leitor de tela e para quem lê o código-fonte. Era exigência
   do brief anterior e continua barato manter.
 */
+/*
+  `top`/`left` explícitos não são enfeite. Sem eles a caixa fica na posição
+  estática — logo depois do `.hero`, que mede 100vh — e o 1px de altura cai
+  em y=100vh, deixando o documento 1px mais alto que a janela em TODAS as
+  rotas. Com `body { overflow: hidden }` isso passava despercebido; bastava
+  soltar a trava (é o que a regra de altura baixa faz agora) para nascer uma
+  barra de rolagem permanente de 1px em cada tela. Ancorar no canto do bloco
+  de contenção inicial resolve na origem.
+*/
 .lista-sem-js {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -2330,9 +2391,20 @@ body:has(.ferramenta) {
 @media (max-width: 1000px) {
   /*
     A nav de 5 itens não cabe ao lado do logo e do botão de contato em tela
-    estreita. Ela desce para uma linha própria, com rolagem lateral em vez de
-    sumir: até 06/08 ela era filtro (dava para viver sem), agora é a única
-    forma de chegar em /sobre e /contato.
+    estreita. Ela desce para uma linha própria: até 06/08 ela era filtro (dava
+    para viver sem), agora é a única forma de chegar em /sobre e /contato.
+
+    Ela descia com `overflow-x: auto`, e a rolagem lateral era a escolha
+    errada. Medido: a fila mede 517px sempre. Num aparelho de 390 o trilho tem
+    357 — sobram 160px do lado de fora, e quem fica de fora é justamente
+    "Sobre mim" e "Contatos". Sem barra (escondida de propósito), sem véu, sem
+    seta: a tela mostrava "Home · Automações · Sites · Sobre" cortado no meio
+    da palavra e nada dizia que havia mais. Em 480 ainda some "Contatos" —
+    que, num portfólio, é a página para onde tudo aponta.
+
+    Quebrar em duas linhas mostra as cinco rotas de uma vez, sem gesto
+    escondido. O raio cai de 100px para 24px porque pílula de duas linhas com
+    borda de cápsula abre meias-luas de vazio nos cantos.
   */
   .header {
     flex-wrap: wrap;
@@ -2342,16 +2414,10 @@ body:has(.ferramenta) {
   .nav {
     order: 3;
     width: 100%;
-    overflow-x: auto;
-    justify-content: flex-start;
-    scrollbar-width: none;
-  }
-  .nav::-webkit-scrollbar {
-    display: none;
-  }
-  /* A nav ocupa uma linha a mais aqui — as rotas de texto respiram junto. */
-  .ferramenta {
-    padding-top: 11rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.25rem;
+    border-radius: 24px;
   }
 }
 
@@ -2359,10 +2425,15 @@ body:has(.ferramenta) {
   body {
     overflow: auto;
   }
+  /*
+    9rem, não 7rem: entre 1001 e 1200 a barra fixa termina em 111px e os 7rem
+    davam 112 — um pixel de folga entre o topo do display e a borda de baixo
+    da barra. Sobrevivia por sorte, e qualquer rótulo mais alto encostava.
+  */
   .hero {
     height: auto;
     min-height: 100vh;
-    padding-top: 7rem;
+    padding-top: 9rem;
     padding-bottom: 3rem;
   }
   .hero-content {
@@ -2380,10 +2451,26 @@ body:has(.ferramenta) {
     height: auto;
     padding: 0;
   }
+  /*
+    `order: -1` saiu. Empilhado, ele colocava o painel ANTES do h1: quem abre
+    a home no celular via primeiro um mock de barras cinzas — a home é a única
+    das três em que o painel não mostra print de peça, mostra desenho — e só
+    depois descobria de quem é o site. Na ordem natural o h1 abre a tela, a
+    descrição explica, e o painel entra logo abaixo, ainda na primeira rolagem.
+  */
   .hero-centro {
     position: relative;
-    order: -1;
     inset: auto;
+  }
+  /*
+    O display do canto é eco tipográfico do título do painel — a mesma frase,
+    grande, ancorada na diagonal oposta. Empilhado não existe diagonal: ele
+    caía sozinho no rodapé da página, centralizado, lendo como título de uma
+    seção que não vem. Some abaixo de 1200 (e some do leitor de tela junto,
+    onde ele já era repetição do `.painel-nome`).
+  */
+  .titulo-lado {
+    display: none;
   }
   .painel {
     width: min(34rem, 92vw);
@@ -2420,6 +2507,78 @@ body:has(.ferramenta) {
   .seletor-cartoes {
     flex-wrap: wrap;
     justify-content: center;
+  }
+}
+
+/*
+  Reserva do espaço da barra fixa. Vem DEPOIS do bloco de 1200px de propósito:
+  as duas regras têm a mesma especificidade e valem juntas abaixo de 1000px —
+  se esta viesse antes, os 9rem de lá venceriam por ordem e o conserto não
+  chegaria a acontecer no celular, que é justamente onde o defeito mora.
+
+  Medido: abaixo de 1000px a barra ganha a linha da nav e termina em 127px; e
+  em 163px quando a nav quebra em duas, o que acontece por volta de 576px de
+  largura — mas isso depende do comprimento dos rótulos e não merece um
+  breakpoint próprio. 12rem = 192px cobrem os dois casos com folga.
+
+  No hero isso não é margem de segurança e sim conserto: com os 7rem que
+  valiam antes, o display batia 15px POR DENTRO da barra em toda largura
+  abaixo de 1000px — defeito que já existia — e 51px depois que a nav passou a
+  ter duas linhas. A `.ferramenta` entra junto porque a segunda linha de nav
+  comeu a folga dela também, de 49px para 13px.
+*/
+@media (max-width: 1000px) {
+  .hero,
+  .ferramenta {
+    padding-top: 12rem;
+  }
+}
+
+/*
+  A vitrine é uma tela só — `body { height: 100vh; overflow: hidden }` — e
+  isso é certo enquanto a tela cabe. Abaixo de ~700px de altura ela não cabe
+  mais, e o que sobra para fora fica INALCANÇÁVEL: medido em 1440×600, 45px do
+  painel de /sites ficavam abaixo da dobra, cortando a linha dos botões "Ver no
+  ar" e "Ver código", sem rolagem possível. Em 1440×660 já se perdiam 25px do
+  painel e 12px do selo. Não é um caso de laboratório: notebook de 1366×768 com
+  barra de favoritos e barra de tarefas chega perto de 600px de área útil.
+
+  A trava é solta pela altura, não pela largura, porque o problema é de altura.
+  Onde a tela cabe nada muda: `min-height: 100vh` dá o mesmo enquadramento que
+  `height: 100vh`, e o documento fica com a altura exata da janela (foi por
+  isso que o 1px do `.lista-sem-js` precisou sair) — sem barra de rolagem.
+*/
+@media (min-width: 1201px) and (max-height: 820px) {
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .hero {
+    height: auto;
+    min-height: 100vh;
+    padding-top: 4rem;
+    padding-bottom: 2rem;
+  }
+  /*
+    Soltar a trava não basta: sem apertar nada, a grade 2×2 do seletor faria
+    /sites pedir 922px num notebook de 800 e a tela viraria uma rolagem curta
+    e feia. Três cortes devolvem o enquadramento de uma tela só até ~720px de
+    altura, na ordem do que é menos essencial: o eco tipográfico do canto sai
+    primeiro (ele repete o título do painel), depois o respiro vertical das
+    colunas, depois a calha entre as linhas de cartões — 2.5rem ainda passam
+    folgados dos 32px que o disco sobe.
+  */
+  .titulo-lado {
+    display: none;
+  }
+  .hero-left,
+  .hero-right {
+    padding: 4rem 0;
+  }
+  .seletor-cartoes {
+    row-gap: 2.5rem;
   }
 }
 

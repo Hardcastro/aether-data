@@ -355,43 +355,33 @@ export function Hero({ itens, aberto, base, titulo, descricao, selo, semJs, cont
               )}
             </h1>
             <p className="descricao">{descricao}</p>
-            <div className="cta-group">
-              {/*
-                Link do Next quando o destino é uma rota daqui — leva a
-                navegação de cliente, que preserva a coreografia; <a> normal
-                quando é projeto externo na Vercel, que abre fora.
-              */}
-              {exibido.acaoPrimaria.externo ? (
-                <a
-                  className="primary-btn"
-                  href={exibido.acaoPrimaria.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {exibido.acaoPrimaria.rotulo.replace(/\s*[↗→]\s*$/, "")}
-                  <span className="plus-icon" aria-hidden="true">
-                    +
-                  </span>
-                </a>
-              ) : (
-                <Link className="primary-btn" href={exibido.acaoPrimaria.href}>
-                  {exibido.acaoPrimaria.rotulo.replace(/\s*[↗→]\s*$/, "")}
-                  <span className="plus-icon" aria-hidden="true">
-                    +
-                  </span>
-                </Link>
-              )}
-              {contato.whatsapp && (
-                <a className="contact-btn" href={`https://wa.me/${contato.whatsapp}`}>
-                  WhatsApp
-                </a>
-              )}
-              {contato.email && (
-                <a className="contact-btn" href={`mailto:${contato.email}`}>
-                  {contato.email}
-                </a>
-              )}
-            </div>
+            {/*
+              Aqui vivia um segundo botão com `exibido.acaoPrimaria` — o mesmo
+              destino, o mesmo rótulo do botão que já está dentro do painel. No
+              desktop os dois apareciam lado a lado, a 350px um do outro: "Ver
+              as 4 peças" na home, "Ver no ar" nas vitrines, escritos duas
+              vezes na mesma tela. Duas chamadas idênticas não somam, dividem.
+
+              A ação da peça ficou onde ela pertence: no painel, que é o que
+              muda quando se troca de peça. A coluna da esquerda voltou a ser o
+              que ela já era em tudo o mais — quem é o site, o que ele faz, e o
+              selo do acervo ancorado embaixo. O canal de contato continua aqui
+              porque contato é da página, não da peça.
+            */}
+            {(contato.whatsapp || contato.email) && (
+              <div className="cta-group">
+                {contato.whatsapp && (
+                  <a className="contact-btn" href={`https://wa.me/${contato.whatsapp}`}>
+                    WhatsApp
+                  </a>
+                )}
+                {contato.email && (
+                  <a className="contact-btn" href={`mailto:${contato.email}`}>
+                    {contato.email}
+                  </a>
+                )}
+              </div>
+            )}
             <div className="selo">
               <div className="selo-icone" aria-hidden="true">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -534,7 +524,17 @@ export function Hero({ itens, aberto, base, titulo, descricao, selo, semJs, cont
                 </div>
               )}
             </div>
-            <h2 className="titulo-lado">{exibido.nome}</h2>
+            {/*
+              `<p aria-hidden>`, não `<h2>`. O texto é o mesmo do
+              `.painel-nome`, que já é um h2 na mesma tela: no leitor de tela a
+              peça era anunciada duas vezes como título, e o segundo não
+              encabeçava nada — é eco tipográfico, ancorado na diagonal oposta
+              à do display da esquerda. Fora da árvore de acessibilidade ele
+              faz o que sempre fez visualmente, sem duplicar a estrutura.
+            */}
+            <p className="titulo-lado" aria-hidden="true">
+              {exibido.nome}
+            </p>
           </div>
         </div>
       </main>
