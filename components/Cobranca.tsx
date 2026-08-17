@@ -638,26 +638,37 @@ export function Cobranca() {
                 um dado ruim na planilha. Corrija na origem e traga o arquivo de volta; a
                 página não conserta telefone por conta própria.
               </p>
-              <table className="cb-recusas">
-                <thead>
-                  <tr>
-                    <th>Quem</th>
-                    <th>Está escrito</th>
-                    <th>Por que não dá</th>
-                    <th>Quanto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leitura.semContato.map((d) => (
-                    <tr key={d.id}>
-                      <td>{d.nome}</td>
-                      <td className="cb-mono">{d.telefone.original || "(vazio)"}</td>
-                      <td>{d.telefone.motivo}</td>
-                      <td className="cb-num">{reais(d.total)}</td>
+              {/*
+                Rolador igual ao da prévia: esta tabela tem quatro colunas de
+                dado de terceiro — nome, telefone e valor — e o valor é
+                `white-space: nowrap`. A largura mínima dela é 326px e não
+                encolhe; num aparelho de 360px a coluna útil é 317px e a tabela
+                vazava 9px para fora do texto da página. O rolador é o mesmo
+                padrão de `.cb-previa-rolo`, `.cc-rolo` e `.nf-tabela-rolo`, e
+                não desenha barra nenhuma quando a tabela cabe.
+              */}
+              <div className="cb-recusas-rolo">
+                <table className="cb-recusas">
+                  <thead>
+                    <tr>
+                      <th>Quem</th>
+                      <th>Está escrito</th>
+                      <th>Por que não dá</th>
+                      <th>Quanto</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {leitura.semContato.map((d) => (
+                      <tr key={d.id}>
+                        <td>{d.nome}</td>
+                        <td className="cb-mono">{d.telefone.original || "(vazio)"}</td>
+                        <td>{d.telefone.motivo}</td>
+                        <td className="cb-num">{reais(d.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ) : null}
 
@@ -672,24 +683,26 @@ export function Cobranca() {
                 O número da linha é o do arquivo aberto no Excel, contando o cabeçalho do
                 relatório — dá para ir direto lá.
               </p>
-              <table className="cb-recusas">
-                <thead>
-                  <tr>
-                    <th>Linha</th>
-                    <th>Por quê</th>
-                    <th>Está escrito</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leitura.descartadas.map((d, i) => (
-                    <tr key={i}>
-                      <td className="cb-num">{d.linha}</td>
-                      <td>{d.motivo}</td>
-                      <td className="cb-mono">{d.original}</td>
+              <div className="cb-recusas-rolo">
+                <table className="cb-recusas">
+                  <thead>
+                    <tr>
+                      <th>Linha</th>
+                      <th>Por quê</th>
+                      <th>Está escrito</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {leitura.descartadas.map((d, i) => (
+                      <tr key={i}>
+                        <td className="cb-num">{d.linha}</td>
+                        <td>{d.motivo}</td>
+                        <td className="cb-mono">{d.original}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ) : null}
         </>
