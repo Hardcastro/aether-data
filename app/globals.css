@@ -1254,7 +1254,7 @@ body:has(.ferramenta) {
 
 .nf-grade {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: 0.7rem;
 }
 .nf-campo {
@@ -1493,7 +1493,7 @@ body:has(.ferramenta) {
 
 .cb-campos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: 0.9rem;
 }
 .cb-campo {
@@ -1581,7 +1581,7 @@ body:has(.ferramenta) {
 
 .cb-resumo-linhas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
   gap: 0.8rem;
 }
 .cb-resumo-item {
@@ -1649,11 +1649,33 @@ body:has(.ferramenta) {
   gap: 0.9rem;
   padding-top: 1rem;
 }
+/*
+  O alvo de toque desta linha era 13×13px na caixa e 306×17px no rótulo — as
+  duas dimensões abaixo dos 24px da WCAG 2.5.8, e é o único controle das quatro
+  rotas que reprovava. Ele só aparece com a dobra "Juros e multa" aberta, que é
+  por que passou batido em cinco rodadas: filho de `<details>` fechado não é
+  visível, mas continua com caixa de layout.
+
+  O padding cresce a área de clique e a margem negativa devolve o espaço ao
+  layout — a linha continua ocupando os mesmos 17px de altura na página, e o
+  alvo passa a ter 25px. É o mesmo truque `-my-2.5 py-2.5` das peças de site,
+  escrito em CSS à mão.
+*/
 .cb-liga {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.88rem;
+  min-height: 1.5rem;
+  padding-block: 0.25rem;
+  margin-block: -0.25rem;
+  cursor: pointer;
+}
+.cb-liga input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+  cursor: pointer;
 }
 .cb-alerta {
   border: 1px solid rgba(255, 200, 120, 0.45);
@@ -1794,6 +1816,9 @@ body:has(.ferramenta) {
 
 /* -------------------------------------------------- recusas e descartes */
 
+.cb-recusas-rolo {
+  overflow-x: auto;
+}
 .cb-recusas {
   border-collapse: collapse;
   width: 100%;
@@ -1871,7 +1896,7 @@ body:has(.ferramenta) {
 */
 .cc-entradas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   gap: 1rem;
 }
 .cc-entrada-caixa {
@@ -2043,7 +2068,7 @@ body:has(.ferramenta) {
 }
 .cc-campos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
   gap: 0.9rem;
 }
 .cc-campo {
@@ -2124,7 +2149,7 @@ body:has(.ferramenta) {
 }
 .cc-crivo-lados {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 1rem;
 }
 .cc-crivo-lado {
@@ -2197,9 +2222,23 @@ body:has(.ferramenta) {
   flex-direction: column;
   gap: 0.7rem;
 }
+/*
+  `minmax(min(Xrem, 100%), 1fr)` e não `minmax(Xrem, 1fr)`, nas oito grades
+  `auto-fit` deste arquivo.
+
+  O piso de uma trilha `minmax` é um piso de verdade: `minmax(15rem, 1fr)` NÃO
+  encolhe abaixo de 240px, então numa coluna de 230px a trilha continua 240 e o
+  bloco vaza 10px para fora do pai. Medido aqui na `.cc-par-lados` a 360px —
+  e a 320px o estrago é maior e em três grades: `.cc-entradas` +6px,
+  `.cc-crivo-lados` +26px, `.cc-par-lados` +46px.
+
+  `min(Xrem, 100%)` mantém o piso enquanto ele couber e o entrega quando não
+  couber — acima de ~375px o layout é byte a byte o mesmo, o que o crivo
+  confere medindo as duas pontas da faixa.
+*/
 .cc-par-lados {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
   gap: 0.9rem;
 }
 .cc-par-lado {
@@ -2686,7 +2725,7 @@ body:has(.ferramenta) {
 
 .mn-regra {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
   gap: 0.9rem;
 }
 
