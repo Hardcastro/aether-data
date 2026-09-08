@@ -6,7 +6,7 @@
 
 ## What this is
 
-A single-route portfolio: `/` renders one piece at a time (`components/Hero.tsx`) inside a glass panel that tilts toward the cursor, with a radial background that morphs to that piece's color and a field of drifting particles behind everything. A selector in the right column lists every piece from `lib/manifesto.ts`, grouped by the competency it demonstrates (pull data / deliver to someone / make it queryable) — clicking one, or the ← / → arrows, swaps the panel. `/?peca=<slug>` opens a specific piece server-rendered, so cold links and social previews land directly on it instead of the default.
+A portfolio of one screen reused: `/`, `/sites`, `/automacoes` and `/motores` all render the same `components/Hero.tsx` — the home shows the vertentes, each vertente route shows its pieces. One piece at a time inside a glass panel that tilts toward the cursor, with a radial background that morphs to that piece's color and a field of drifting particles behind everything. A selector in the right column lists every piece from `lib/manifesto.ts`, grouped by the competency it demonstrates (there are six: puxa, confere, entrega, consulta, responde, procura) — clicking one, or the ← / → arrows, swaps the panel. `/?peca=<slug>` opens a specific piece server-rendered, so cold links and social previews land directly on it instead of the default.
 
 ## Running it
 
@@ -56,7 +56,17 @@ Opening a piece calls `router.push('/?peca=<slug>')`. The page component (`app/p
 
 ## Adding a new piece
 
-Add one entry to the `PECAS` array in `lib/manifesto.ts` — `slug`, `nome`, `capacidade`, `grupo`, `cor` (the three-stop radial gradient the background morphs to), `url`, optional `repo`, `stack`, `oQueProva`, and `imagem` (a 1440×900 screenshot in `public/prints/`, or `null` to show a placeholder). Nothing else changes: no new route, no CMS, no database. A group with zero pieces is simply never rendered — see `GRUPOS_COM_PECAS` — and every piece count shown on the page (`MARCA.descricao`, the hero's "N peças no ar" badge, the OG image) reads `PECAS.length` rather than a written-out number, so adding a piece can't leave stale copy behind the way an earlier version of this file did.
+Add one entry to the `PECAS` array in `lib/manifesto.ts` — `slug`, `nome`, `capacidade`, `grupo` (the competency), `tipo` (the vertente, which decides the route), `cor` (the three-stop radial gradient the background morphs to), `url`, optional `interna` and `repo`, `stack`, `oQueProva`, and `imagem` (a 1440×900 screenshot in `public/prints/`, or `null` to show a placeholder). Nothing else changes: no new route, no CMS, no database. A group with zero pieces is simply never rendered — see `GRUPOS_COM_PECAS` — and every piece count shown on the page (`MARCA.descricao`, the hero's "N peças no ar" badge, the OG image) reads `PECAS.length` rather than a written-out number, so adding a piece can't leave stale copy behind the way an earlier version of this file did.
+
+## Why there is no LICENSE file
+
+The four site pieces ship MIT, because they exist to be read, copied and
+adapted — that is what a portfolio piece is for. This repository is the
+showcase itself: what it holds is an arrangement, a set of copy decisions and
+a manifest, not a component anyone would lift into their own project. Leaving
+it unlicensed states that accurately — all rights reserved by default —
+instead of extending an invitation the repository does not actually mean. It
+is a decision, not an oversight.
 
 ## Stack
 
