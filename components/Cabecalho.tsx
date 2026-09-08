@@ -23,6 +23,7 @@ const ITENS = [
   { href: "/", rotulo: "Home" },
   { href: "/automacoes", rotulo: "Automações" },
   { href: "/sites", rotulo: "Sites" },
+  { href: "/motores", rotulo: "Motores" },
   { href: "/sobre", rotulo: "Sobre mim" },
   { href: "/contato", rotulo: "Contatos" },
 ] as const;

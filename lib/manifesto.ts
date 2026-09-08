@@ -1,4 +1,4 @@
-export type Grupo = "puxa" | "confere" | "entrega" | "consulta" | "responde";
+export type Grupo = "puxa" | "confere" | "entrega" | "consulta" | "responde" | "procura";
 
 /**
  * O corte de 07/08: o visitante escolhe primeiro pelo que ele sabe sobre si
@@ -12,7 +12,7 @@ export type Grupo = "puxa" | "confere" | "entrega" | "consulta" | "responde";
  * `tipo` responde "o que a peça é". Uma automação hospedada fora continuaria
  * `automacao` com `interna: false`.
  */
-export type Tipo = "site" | "automacao";
+export type Tipo = "site" | "automacao" | "motor";
 
 /**
  * Trio do gradiente radial de fundo. Cada peça pinta o mundo inteiro da sua
@@ -111,6 +111,30 @@ export const TIPOS: Record<Tipo, TipoInfo> = {
       "Ferramentas que fazem sozinhas o que hoje alguém faz na mão — calcular, responder, avisar",
     cor: { inner: "#8a1a0b", mid: "#4e0d04", outer: "#140301" },
   },
+  /*
+    Vertente de 08/09/2026, aberta pelo `pipeline-ia-dupla`. Ela existe porque
+    nenhuma das duas que havia descreve a peça sem mentir: não é página que
+    mostra dado, e não roda sozinha — ela fica parada até outro programa
+    chamar. Tipo é a porta de entrada, e uma porta a mais é mais honesta do que
+    empurrar a peça por uma que não serve.
+
+    O custo, dito em voz alta: a vertente nasce com uma peça só, o menu ganha um
+    item e a home ganha um terceiro cartão para desenhar. Se ela ficar sozinha
+    por muito tempo, ela descreve a peça e não uma vertente — o mesmo contra que
+    está escrito no `confere`.
+  */
+  motor: {
+    chave: "motor",
+    rota: "/motores",
+    titulo: "Motores",
+    etiqueta: "Peça que outro programa chama",
+    chamada:
+      "Peças que trabalham atrás de outro programa — recebem um pedido e devolvem trabalhado, sem tela no meio",
+    // Matiz 303. As dez peças e as duas vertentes ocupam 7, 45, 72, 98, 140,
+    // 171, 208, 249, 278 e 328; a maior lacuna que sobrou é 278→328, de 50 de
+    // largura, e este é o meio dela.
+    cor: { inner: "#8a0b83", mid: "#4e044a", outer: "#140112" },
+  },
 };
 
 /**
@@ -181,6 +205,27 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     titulo: "Responde sozinho",
     apoio: "Regra que dispara, aviso agendado, registro do que rodou",
   },
+  /*
+    Grupo de 08/09/2026, aberto pelo `vaga-fila`. A pergunta era qual das cinco
+    competências ele carrega, e nenhuma serve sem forçar: ele lê sete fontes
+    (`puxa`), roda sozinho e registra toda rodada (`responde`), e ranqueia o que
+    sobra — que não é nem uma nem outra.
+
+    **O argumento é o mesmo que ganhou no `confere` em 10/08, e o contra
+    também.** Empilhar o vaga-fila em `puxa` ou em `responde` desfaz a
+    demonstração de uma competência por peça que aquele grupo comprou. O contra
+    continua de pé: grupo com uma peça só descreve a peça, não uma competência.
+
+    Fica por último de propósito. A ordem das chaves é a ordem em que os grupos
+    aparecem, e a sequência lê como o caminho do dado. Procurar vem antes de
+    puxar na vida real, mas pôr este grupo em primeiro faz a vitrine abrir pela
+    peça que resolve problema meu, não do visitante.
+  */
+  procura: {
+    chave: "procura",
+    titulo: "Procura e ranqueia",
+    apoio: "Vaga, edital, fornecedor, oportunidade que aparece e some",
+  },
 };
 
 export const PECAS: Peca[] = [
@@ -237,7 +282,8 @@ export const PECAS: Peca[] = [
   {
     slug: "indicadores-tempo-real",
     nome: "Os números do Brasil, atualizados sozinhos",
-    capacidade: "Duas fontes públicas, de formatos incompatíveis, atrás de uma interface só — e a página fica em pé quando uma cai",
+    capacidade:
+      "Duas fontes públicas, de formatos incompatíveis, atrás de uma interface só — e as demais continuam quando uma não responde",
     grupo: "consulta",
     tipo: "site",
     cor: { inner: "#8a6a0b", mid: "#4e3a04", outer: "#141001" },
@@ -305,7 +351,7 @@ export const PECAS: Peca[] = [
     slug: "conciliacao-extrato-planilha",
     nome: "O que não bate entre o extrato e a planilha",
     capacidade:
-      "Extrato e lançamentos cruzados em quatro listas — casou, provável par, só de um lado, só do outro — e a peça prova, na tela, que nenhuma linha sumiu no caminho",
+      "Extrato e lançamentos cruzados em quatro listas — o que bateu, o provável par, o que só aparece no extrato e o que só aparece nos lançamentos — e a peça prova, na tela, que nenhuma linha sumiu no caminho",
     grupo: "confere",
     // A peça que torna público o quinto grupo. `confere` foi declarado em 10/08
     // e nasceu vazio: `GRUPOS_COM_PECAS` não desenha grupo sem peça, então até
@@ -380,6 +426,59 @@ export const PECAS: Peca[] = [
     `entrega`, não em `responde`. O grupo que ela esvaziou fica vazio e
     invisível até o monitor entrar; ver o comentário de `responde` em GRUPOS.
   */
+  /*
+    Duas entradas de 08/09/2026, e as duas primeiras que moram fora deste
+    repositório. É o caso que o comentário de `Tipo` previu desde o começo:
+    peça hospedada em outro lugar continua sendo do seu tipo, só não é
+    `interna`.
+
+    **A régua de cor acabou aqui, como estava escrito que ia acabar.** O
+    comentário do monitor registrou que "um matiz por peça, sempre na maior
+    lacuna" tinha sobrevivido às dez e que a décima primeira precisaria de outro
+    critério. O critério novo: da décima primeira em diante, **a peça herda o
+    matiz da própria vertente e se distingue pela luminosidade.** Isso escala
+    sem fim, e tem um ganho que a régua antiga não tinha — peça e vertente
+    passam a parecer parentes, que é o que o visitante deveria enxergar. As dez
+    primeiras ficam como estão: reescrever a paleta inteira seria mexer no que
+    já foi conferido, para resolver um problema das novas.
+  */
+  {
+    slug: "fila-de-vagas",
+    nome: "A fila do dia, e a prova de que ela rodou",
+    capacidade:
+      "Sete fontes públicas lidas todo dia, filtradas por um perfil escrito uma vez, ranqueadas por faixa e por mercado, e publicadas como a fila do dia com a carta já redigida — com o registro de todas as rodadas aberto ao lado, inclusive as que não acharam nada",
+    grupo: "procura",
+    tipo: "automacao",
+    // Matiz 7, o mesmo da vertente de automações, com luminosidade acima. É a
+    // primeira peça sob o critério novo descrito acima.
+    cor: { inner: "#c42510", mid: "#6f150a", outer: "#1c0502" },
+    imagem: null,
+    url: "https://hardcastro.github.io/vaga-fila/",
+    repo: "https://github.com/Hardcastro/vaga-fila",
+    stack: ["Python", "GitHub Actions", "GitHub Pages"],
+    oQueProva: [
+      "É a segunda peça deste portfólio a resolver o mesmo problema de prova que o /monitor resolve, e em outro domínio: uma automação agendada que não acha nada é indistinguível de uma que morreu. A resposta é a mesma dos dois lados — o registro público de toda rodada, inclusive a silenciosa, ao lado do resultado. Que o mesmo raciocínio tenha aparecido duas vezes, sozinho, em problemas que não se parecem, diz mais sobre método do que qualquer das duas peças diz sozinha.",
+      "E o desenho dela veio de medir antes de escrever, não de supor. Três medições mudaram o projeto: de 440 anúncios lidos, 12% publicavam remuneração — então a faixa salarial passou a ranquear em vez de cortar, porque cortar quem não publica esvaziaria a fila. De 447 anúncios, 2,7% traziam algum endereço de e-mail, e depois de tirar caixa coletiva sobraram quatro, nenhum em vaga do perfil — então o envio automático por e-mail saiu do caminho principal. E ligar o índice brasileiro levou as vagas compatíveis de 17 para 287, com mediana de remuneração muito abaixo do piso declarado para o mercado internacional — então o piso passou a ser um por mercado, em vez de um número só fingindo servir para os dois.",
+    ],
+  },
+  {
+    slug: "pipeline-ia-dupla",
+    nome: "O pedido vira instrução antes de virar resposta",
+    capacidade:
+      "O pedido escrito como a pessoa falaria entra, um modelo o reescreve como instrução técnica, outro executa, e a resposta chega em fluxo enquanto é produzida — sem tela no meio, para outro programa chamar",
+    grupo: "responde",
+    tipo: "motor",
+    // Matiz 303, o mesmo da vertente de motores, com luminosidade acima.
+    cor: { inner: "#c410bb", mid: "#6f0969", outer: "#1c021a" },
+    imagem: null,
+    url: "https://pipeline-ia-dupla.onrender.com",
+    repo: "https://github.com/Hardcastro/pipeline-ia-dupla",
+    stack: ["Node.js", "Express", "Gemini", "Server-Sent Events", "Docker"],
+    oQueProva: [
+      "A parte que interessa não é chamar um modelo — é a etapa do meio. Pedido de gente vem solto, e modelo responde melhor a instrução do que a conversa; então o primeiro passo não responde nada, só reescreve o pedido no formato que o segundo executa bem. É a mesma ideia de separar quem lê do que decide, que aparece nas outras peças deste portfólio em cima de planilha e de extrato, aplicada aqui em cima de linguagem.",
+      "A resposta chega em fluxo, e isso é escolha de produto e não de infraestrutura: um pedido que demora vinte segundos com a tela parada parece quebrado, e o mesmo pedido escrevendo desde o segundo um parece rápido. O tempo total é igual nos dois casos.",
+    ],
+  },
 ];
 
 /** A peça que abre o site quando a URL não pede nenhuma. */
