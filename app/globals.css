@@ -476,6 +476,22 @@ body {
   pointer-events: auto;
   transform-style: preserve-3d;
   will-change: transform, filter;
+  /*
+    Teto de altura, por causa do `<details>` do "Por que ela existe".
+
+    O painel é centralizado por `.hero-centro` (`position:absolute; inset:0;
+    align-items:center`), então crescer empurra as duas pontas ao mesmo tempo:
+    numa janela de 900px o painel fechado já ocupa ~660 dos ~820 disponíveis, e
+    abrir o texto cortava a figura por cima e os botões por baixo. Medido, não
+    estimado — o primeiro print mostrou exatamente isso.
+
+    Com o teto, a janela decide: onde couber, o painel cresce e nada rola; onde
+    não couber, ele para de crescer e o conteúdo rola por dentro. Os botões
+    continuam alcançáveis nos dois casos, que era o que estava quebrado.
+  */
+  max-height: calc(100vh - 6.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .painel-figura {
@@ -559,6 +575,20 @@ body {
   color: var(--muted-color);
   margin-bottom: 1rem;
 }
+/*
+  A ressalva dos negócios inventados. Um degrau abaixo da capacidade em tamanho
+  e em peso — ela é condição de leitura, não argumento de venda — mas com opacidade
+  suficiente para passar no contraste. Ressalva que ninguém lê não ressalva nada.
+  A regra a mantém puxada para cima do 1rem que a capacidade abre, para as duas
+  lerem como um bloco só.
+*/
+.painel-ressalva {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.58);
+  margin-top: -0.6rem;
+  margin-bottom: 1rem;
+}
 .painel-stack {
   display: flex;
   flex-wrap: wrap;
@@ -574,6 +604,80 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.85);
 }
+/*
+  O argumento da peça, dobrado dentro do painel.
+
+  Os dois parágrafos de `oQueProva` sempre existiram e nunca foram lidos por
+  ninguém: saíam só no bloco `.lista-sem-js`, que é `clip: inset(50%)`. O painel
+  não pode mostrá-los abertos — ele tem 38rem de largura e divide a tela com o
+  seletor — então eles ficam a um clique, e o clique é `<details>` nativo.
+
+  A altura do corpo é limitada e rola por dentro. Sem esse teto, abrir a peça da
+  conciliação (dois parágrafos longos) empurraria os botões para fora da janela
+  numa tela de 900px de altura, que é a mais comum. Com ele, abrir custa uma
+  altura conhecida, sempre a mesma, em qualquer peça.
+*/
+.painel-porque {
+  margin-bottom: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.85rem;
+}
+.painel-porque > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  /* Alvo de toque: 0.78rem de texto sozinho dá ~19px de altura no celular. */
+  padding: 0.35rem 0;
+  transition: color 0.2s ease;
+}
+/* O triângulo padrão do navegador muda de forma entre motores; este não. */
+.painel-porque > summary::-webkit-details-marker {
+  display: none;
+}
+.painel-porque > summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.2s ease;
+}
+.painel-porque[open] > summary::before {
+  transform: rotate(90deg);
+}
+.painel-porque > summary:hover,
+.painel-porque[open] > summary {
+  color: rgba(255, 255, 255, 0.95);
+}
+/*
+  Sem teto próprio: quem limita agora é o `max-height` do `.painel`, que sabe
+  quanto de janela existe. Dois tetos aninhados dariam duas barras de rolagem
+  na mesma coluna de texto.
+*/
+.painel-porque-corpo {
+  margin-top: 0.6rem;
+}
+.painel-porque-corpo p {
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+}
+.painel-porque-corpo p + p {
+  margin-top: 0.7rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .painel-porque > summary,
+  .painel-porque > summary::before {
+    transition: none;
+  }
+}
+
 .painel-acoes {
   display: flex;
   gap: 0.6rem;
@@ -2513,6 +2617,15 @@ body:has(.ferramenta) {
   }
   .painel {
     width: min(34rem, 92vw);
+    /*
+      O teto de altura e a rolagem interna existem só enquanto `.hero-centro` é
+      absoluto e centraliza o painel na janela. Aqui ele voltou para o fluxo
+      (logo acima), a página inteira rola, e manter o teto criaria rolagem
+      dentro de rolagem — o "Por que ela existe" abriria uma caixinha de texto
+      rolável dentro de uma página rolável, que é a pior versão dos dois.
+    */
+    max-height: none;
+    overflow: visible;
   }
   /*
     Centralizar só dentro do hero. A regra era global enquanto o hero era a
