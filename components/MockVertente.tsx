@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import type { Tipo } from "@/lib/manifesto";
 
 /**
@@ -171,10 +172,103 @@ function MockAutomacao() {
   );
 }
 
+/**
+ * Motores — uma peça que outro programa chama.
+ *
+ * Lê como ida e volta, não como fluxo de mão única: quem chama está fora do
+ * desenho (borda tracejada, o mesmo vocabulário que a fonte de dado do mock de
+ * sites usa para dizer "isto não é meu"), e a resposta volta para ele.
+ *
+ * O que carrega o argumento é a caixa em destaque, e é por isso que ela é a
+ * maior: o pedido entra com as linhas desalinhadas e sai com as linhas
+ * alinhadas. A etapa do meio não responde nada — ela reescreve. É a única
+ * vertente das tres em que o produto e uma transformacao e nao uma tela.
+ *
+ * Sem cromo de navegador e sem relógio, de propósito: os dois outros mocks os
+ * usam para dizer "tem tela" e "roda sozinha", e esta vertente não é nenhum dos
+ * dois. Ela fica parada até alguém chamar.
+ */
+function MockMotor() {
+  const caixa = (x: number, y: number, w: number, h: number, destaque = false) => (
+    <rect
+      x={x}
+      y={y}
+      width={w}
+      height={h}
+      rx={10}
+      fill={VIDRO}
+      stroke={destaque ? "var(--accent)" : BORDA}
+      strokeOpacity={destaque ? 0.6 : 1}
+    />
+  );
+
+  return (
+    <svg viewBox="0 0 640 400" role="img" aria-label="Ilustração de uma peça chamada por outro programa: o pedido entra solto, é reescrito como instrução e a resposta volta em fluxo">
+      <rect x="0" y="0" width="640" height="400" rx="14" fill={VIDRO} />
+      <rect x="0.5" y="0.5" width="639" height="399" rx="14" fill="none" stroke={BORDA_FRACA} />
+
+      <Linha x={40} y={34} w={150} h={7} o={TEXTO_FORTE} />
+
+      {/* quem chama — fora do desenho, como a fonte de dado no mock de sites */}
+      <rect x="40" y="72" width="148" height="72" rx="10" fill="rgba(255,255,255,0.05)" stroke={BORDA} strokeDasharray="5 4" />
+      <Linha x={58} y={92} w={62} h={6} o={TEXTO_FORTE} />
+      <Linha x={58} y={110} w={104} h={5} />
+      <Linha x={58} y={124} w={78} h={5} />
+
+      <path d="M188 108 h30 q10 0 10 10 v52" stroke={BORDA} strokeWidth="1.6" fill="none" />
+      <path d="M223 168 l5 9 5 -9z" fill={BORDA} />
+
+      {/* reescreve: entra desalinhado, sai alinhado */}
+      {caixa(156, 180, 172, 148, true)}
+      <Linha x={176} y={202} w={96} h={5} />
+      <Linha x={188} y={216} w={62} h={5} />
+      <Linha x={172} y={230} w={118} h={5} />
+      <path d="M176 252 h132" stroke="var(--accent)" strokeWidth="1.4" opacity="0.55" />
+      {[266, 282, 298].map((y) => (
+        <Linha key={y} x={176} y={y} w={132} h={6} o={TEXTO_FORTE} />
+      ))}
+
+      <path d="M328 254 h44" stroke={BORDA} strokeWidth="1.6" fill="none" />
+      <path d="M366 249 l8 5 -8 5z" fill={BORDA} />
+
+      {/* executa */}
+      {caixa(380, 212, 148, 84)}
+      <Linha x={398} y={234} w={70} h={6} o={TEXTO_FORTE} />
+      <Linha x={398} y={252} w={104} h={5} />
+      <Linha x={398} y={268} w={82} h={5} />
+
+      {/* a resposta chega em fluxo, e volta para quem chamou */}
+      <path
+        d="M528 254 h44 q10 0 10 -10 v-84 q0 -10 -10 -10 h-160"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1.6"
+        opacity="0.75"
+      />
+      <path d="M418 150 l9 -5 0 10z" fill="var(--accent)" opacity="0.75" />
+      {[[452, 0.5], [492, 0.34], [532, 0.2]].map(([x, o]) => (
+        <rect key={x} x={x} y={137} width="26" height="6" rx="3" fill="var(--accent)" opacity={o} />
+      ))}
+    </svg>
+  );
+}
+
+const DESENHOS: Record<Tipo, () => ReactElement> = {
+  site: MockSite,
+  automacao: MockAutomacao,
+  motor: MockMotor,
+};
+
 export function MockVertente({ tipo }: { tipo: Tipo }) {
   return (
     <div className="mock" aria-hidden={false}>
-      {tipo === "site" ? <MockSite /> : <MockAutomacao />}
+      {/*
+        Mapa em vez de ternário: com duas vertentes um ternário era exaustivo,
+        com três ele deixa de ser — e o ramo esquecido não dá erro de tipo, só
+        desenha a vertente errada em silêncio. Um Record<Tipo, …> quebra o build
+        quando uma vertente nova entrar no manifesto sem mock.
+      */}
+      {DESENHOS[tipo]()}
     </div>
   );
 }

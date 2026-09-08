@@ -63,10 +63,9 @@ export default function PaginaCobranca() {
         <div className="ferramenta-pe">
           <p>
             Quem cobra não tem uma lista de pessoas: tem uma lista de <em>títulos</em>, e o
-            mesmo nome aparece nela várias vezes. A Serasa mediu, em 2026, uma média de{" "}
-            <strong>6,6 contas em atraso</strong> por micro e pequena empresa inadimplente.
-            Mandar seis mensagens para a mesma pessoa é o que a mão faz quando cansa — e é
-            o que queima o cliente. Agrupar antes de escrever não é acabamento, é a peça.
+            mesmo nome aparece nela várias vezes. Mandar uma mensagem por título é o que a
+            mão faz quando cansa — e é o que queima o cliente. Agrupar antes de escrever não
+            é acabamento, é a peça.
           </p>
           <p>
             A outra metade é o que ela se recusa a fazer: não dispara sozinha, não preenche

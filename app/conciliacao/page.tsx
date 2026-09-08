@@ -60,10 +60,9 @@ export default function PaginaConciliacao() {
 
         <div className="ferramenta-pe">
           <p>
-            Quem controla o financeiro em planilha gasta cerca de <strong>8 horas por mês</strong>{" "}
-            só conciliando — três telas abertas e o dedo descendo linha por linha, toda sexta
-            à tarde. O trabalho não é achar o que bate. É achar as quatro linhas que não
-            batem, no meio das cento e quarenta que batem.
+            Quem controla o financeiro em planilha concilia com três telas abertas e o dedo
+            descendo linha por linha, toda sexta à tarde. O trabalho não é achar o que bate.
+            É achar as quatro linhas que não batem, no meio das cento e quarenta que batem.
           </p>
           <p>
             Por isso a lista de quem casou nasce recolhida aqui, e por isso a primeira coisa

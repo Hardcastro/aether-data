@@ -13,7 +13,7 @@ export type PropsVitrine = {
 /**
  * UMA tela, usada três vezes — decisão dele, 07/08.
  *
- *   /            → os cartões são as duas vertentes; abrir uma leva para a rota dela
+ *   /            → os cartões são as vertentes; abrir uma leva para a rota dela
  *   /sites       → os cartões são as 4 peças de site
  *   /automacoes  → os cartões são as peças de automação
  *
@@ -43,7 +43,7 @@ function configurar(escopo: Tipo | null): Config {
       base: "/",
       itens: itensDaHome(),
       titulo: { linha1: "AEther", linha2: "Data" },
-      descricao: `${MARCA.promessa} Duas vertentes, ${PECAS.length} peças no ar — todas abertas e usáveis agora.`,
+      descricao: `${MARCA.promessa} ${PECAS.length} peças no ar, agrupadas por vertente — todas abertas e usáveis agora.`,
       selo: { titulo: `${PECAS.length} PEÇAS NO AR`, subtitulo: SUBTITULO_SELO },
       semJs: linhasSemJs(null),
     };
