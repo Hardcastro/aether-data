@@ -35,7 +35,21 @@ type Config = {
   semJs: string[];
 };
 
-const SUBTITULO_SELO = "Cresce por commit, sem vaga vazia";
+/*
+  O selo está na primeira dobra, colado no número. Ele existe para qualificar
+  esse número para quem chegou de fora — e "Cresce por commit, sem vaga vazia",
+  que morava aqui, é invariante de código: descreve o gerador, não o acervo.
+  "Commit" e "vaga vazia" são duas palavras nossas gastas no lugar mais caro do
+  site. No lugar entra a credencial que o visitante confere num clique.
+*/
+const SUBTITULO_SELO = "Código aberto em todas";
+
+/*
+  Contado, nunca escrito — mesma regra de MARCA.descricao. Se amanhã entrar uma
+  peça sem repositório, a frase da home deixa de dizer "todas" sozinha, em vez
+  de continuar afirmando o que deixou de ser verdade.
+*/
+const COM_CODIGO = PECAS.filter((p) => p.repo).length;
 
 function configurar(escopo: Tipo | null): Config {
   if (escopo === null) {
@@ -43,7 +57,23 @@ function configurar(escopo: Tipo | null): Config {
       base: "/",
       itens: itensDaHome(),
       titulo: { linha1: "AEther", linha2: "Data" },
-      descricao: `${MARCA.promessa} ${PECAS.length} peças no ar, agrupadas por vertente — todas abertas e usáveis agora.`,
+      /*
+        A frase da primeira dobra. A anterior dizia "agrupadas por vertente":
+        "vertente" é palavra de dentro de casa — não aparece em nenhum outro
+        lugar da interface, e o visitante vê "Sites", "Automações", "Motores".
+        O comentário do Cabecalho já tinha escrito a regra: porta de entrada
+        fala a língua de quem chega.
+
+        No lugar dela, as duas coisas que fazem um estranho clicar, e que só
+        estavam ditas no fundo do site: o código está aberto, e as peças daqui
+        de dentro trabalham sem cadastro. Nenhuma das duas é adjetivo — as duas
+        se conferem em um clique.
+      */
+      descricao: `${MARCA.promessa} ${PECAS.length} peças no ar${
+        COM_CODIGO === PECAS.length
+          ? ", todas com o código aberto"
+          : `, ${COM_CODIGO} delas com o código aberto`
+      } — e as que rodam aqui dentro funcionam agora, sem cadastro.`,
       selo: { titulo: `${PECAS.length} PEÇAS NO AR`, subtitulo: SUBTITULO_SELO },
       semJs: linhasSemJs(null),
     };
@@ -127,8 +157,19 @@ export async function metadadosVitrine(
 
   if (!pedido) {
     const nome = escopo === null ? MARCA.nome : `${TIPOS[escopo].titulo} — ${MARCA.nome}`;
+    /*
+      Título de aba e título de compartilhamento não são a mesma coisa, e a home
+      pagava por confundir os dois. O layout já montava
+      "AEther Data — <promessa>"; esta função sobrescrevia com "AEther Data"
+      seco. Resultado: a página mais valiosa do site era a única cujo título não
+      dizia o que o site faz, num nome que ninguém procura.
+
+      No card compartilhado o nome sozinho continua certo — ali a descrição vem
+      logo abaixo, e repetir a promessa nas duas linhas é eco.
+    */
+    const tituloDocumento = escopo === null ? `${MARCA.nome} — ${MARCA.promessa}` : nome;
     return {
-      title: nome,
+      title: tituloDocumento,
       description: cfg.descricao,
       alternates: { canonical: cfg.base },
       openGraph: { title: nome, description: cfg.descricao, images: [`${MARCA.url}/opengraph-image`] },

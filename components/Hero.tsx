@@ -430,6 +430,14 @@ export function Hero({ itens, aberto, base, titulo, descricao, selo, semJs, cont
                   <p className="painel-grupo">{exibido.etiqueta}</p>
                   <h2 className="painel-nome">{exibido.nome}</h2>
                   <p className="painel-capacidade">{exibido.capacidade}</p>
+                  {/*
+                    Fica abaixo da capacidade e acima do botão que leva para
+                    fora, que é a ordem em que a pessoa lê antes de clicar. Peça
+                    sem ressalva não desenha nada — regra do vazio.
+                  */}
+                  {exibido.ressalva && (
+                    <p className="painel-ressalva">{exibido.ressalva}</p>
+                  )}
                   <ul className="painel-stack">
                     {exibido.fichas.map((f) => (
                       <li key={f}>{f}</li>
@@ -461,6 +469,29 @@ export function Hero({ itens, aberto, base, titulo, descricao, selo, semJs, cont
                       </a>
                     )}
                   </div>
+                  {/*
+                    `<details>` nativo, e não um estado do React: funciona sem
+                    script, responde a teclado de graça, e o conteúdo continua
+                    na árvore de acessibilidade fechado. O texto é o mesmo que
+                    o bloco `.lista-sem-js` já publicava para o buscador — a
+                    diferença é que agora alguém consegue ler.
+
+                    Fica DEPOIS dos botões, e isso foi medido: o painel é
+                    centralizado, então crescer empurra as duas pontas. Com o
+                    texto antes da ação, abrir jogava "Usar agora" para fora da
+                    janela numa tela de 900px. Depois dela, a ação continua no
+                    lugar e quem quer o argumento rola por dentro do painel.
+                  */}
+                  {exibido.porQueExiste.length > 0 && (
+                    <details className="painel-porque">
+                      <summary>Por que ela existe</summary>
+                      <div className="painel-porque-corpo">
+                        {exibido.porQueExiste.map((paragrafo) => (
+                          <p key={paragrafo.slice(0, 40)}>{paragrafo}</p>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               </article>
             </div>

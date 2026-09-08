@@ -40,6 +40,17 @@ export default function Contato() {
   ].filter((c): c is { rotulo: string; href: string } => c !== null);
 
   /*
+    Perfil não é canal de atendimento, e a página não vai fingir que é — mas
+    "não tem onde falar comigo" era falso desde sempre, porque o LinkedIn
+    existe e é por ele que as pessoas chegam. Mesma regra do vazio: campo nulo
+    em site.config.ts não desenha nada.
+  */
+  const perfis = [
+    MARCA.linkedin ? { rotulo: "LinkedIn ↗", href: MARCA.linkedin } : null,
+    MARCA.github ? { rotulo: "GitHub ↗", href: MARCA.github } : null,
+  ].filter((p): p is { rotulo: string; href: string } => p !== null);
+
+  /*
     Era a calculadora até 10/08. Enterrada — ver o fim de PECAS em
     lib/manifesto.ts. A porta que sobra é a peça que faz trabalho de verdade
     com o arquivo de quem chegou, não a que estima o custo dele.
@@ -75,17 +86,41 @@ export default function Contato() {
           </section>
         ) : (
           <section className="prosa">
-            <h2>Ainda não tem canal aberto</h2>
+            {perfis.length > 0 && (
+              <>
+                <h2>Onde eu estou</h2>
+                <p>
+                  São perfis, não central de atendimento — mas é por eles que dá
+                  para me achar hoje, e é para eles que respondo.
+                </p>
+                <div className="prosa-acoes">
+                  {perfis.map((p, i) => (
+                    <a
+                      key={p.href}
+                      className={i === 0 ? "btn-primario" : "btn-secundario"}
+                      href={p.href}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {p.rotulo}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
+            <h2>Não tem formulário aqui</h2>
             <p>
-              O canal de contato desta página está sendo construído junto com as
-              peças que faltam. Enquanto ele não existe, prefiro dizer isso a
-              deixar um formulário que não entrega em lugar nenhum.
+              E é de propósito. Formulário de contato é uma das peças deste
+              portfólio — está no site de contabilidade, com validação nas duas
+              pontas e falha declarada quando não dá para entregar. Colocar aqui
+              um que não entrega em lugar nenhum seria contradizer, na minha
+              própria página, a peça que eu mostro como prova.
             </p>
             {porta && (
               <p>
-                Se você chegou aqui com um processo manual em mente, a peça no
-                ar já trabalha: arraste os XML das suas notas e leve a planilha
-                pronta, sem cadastro e sem subir nada.{" "}
+                E se você chegou com um processo manual em mente, não precisa
+                esperar resposta para começar: arraste os XML das suas notas e
+                leve a planilha pronta, sem cadastro e sem subir nada.{" "}
                 <Link href={rotaDaPeca(porta)}>{porta.nome} →</Link>
               </p>
             )}

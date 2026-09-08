@@ -41,6 +41,17 @@ export type Peca = {
    * Ver plano-portfolio.md, "Alinhamento das peças de contato — 06/08".
    */
   interna?: boolean;
+  /**
+   * Uma linha curta que a peça precisa carregar junto com a capacidade, quando
+   * a capacidade sozinha deixaria o visitante entender errado. Hoje só os três
+   * negócios inventados usam.
+   *
+   * Existe porque a ressalva estava nos metadados de cada destino desde
+   * 08/09/2026 e em lugar nenhum do hub que manda o visitante para lá —
+   * declarar no destino e calar na origem é declarar para o buscador e não para
+   * a pessoa. Campo ausente não desenha nada, como todo o resto daqui.
+   */
+  ressalva?: string;
   repo?: string;
   stack: string[];
   oQueProva: string[];
@@ -248,6 +259,7 @@ export const PECAS: Peca[] = [
     tipo: "site",
     cor: { inner: "#0b8a78", mid: "#044e3b", outer: "#011411" },
     imagem: "/prints/cardapio-planilha.png",
+    ressalva: "Restaurante inventado — o site é a peça, o negócio não existe.",
     url: "https://restaurante-cardapio-planilha.vercel.app",
     repo: "https://github.com/Hardcastro/restaurante-cardapio-planilha",
     stack: ["Next.js", "Tailwind", "Vercel"],
@@ -264,6 +276,7 @@ export const PECAS: Peca[] = [
     tipo: "site",
     cor: { inner: "#0b4f8a", mid: "#04294e", outer: "#010c14" },
     imagem: "/prints/busca-por-aplicacao.png",
+    ressalva: "Distribuidora inventada — o catálogo é real em formato, fictício em conteúdo.",
     url: "https://distribuidora-autopecas.vercel.app",
     repo: "https://github.com/Hardcastro/distribuidora-autopecas",
     stack: ["Next.js", "Tailwind", "Vercel"],
@@ -282,6 +295,7 @@ export const PECAS: Peca[] = [
     tipo: "site",
     cor: { inner: "#6d3a8a", mid: "#35194e", outer: "#0f0614" },
     imagem: "/prints/formulario-que-entrega.png",
+    ressalva: "Escritório inventado — o formulário funciona de verdade, a empresa não existe.",
     url: "https://contabilidade-institucional.vercel.app",
     repo: "https://github.com/Hardcastro/contabilidade-institucional",
     stack: ["Next.js", "Tailwind", "Resend", "Vercel"],
