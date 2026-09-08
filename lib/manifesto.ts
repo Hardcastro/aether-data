@@ -74,6 +74,14 @@ export type TipoInfo = {
   rota: string;
   /** Nome no menu, no seletor da home e no display da própria vitrine. */
   titulo: string;
+  /**
+   * Artigo definido do título, para frase montada em runtime — "Ver **os**
+   * sites", "Ver **as** automações". Sem ele, qualquer texto derivado de
+   * TIPOS teria que escolher entre errar o gênero ou repetir a lista à mão,
+   * que foi como /sobre e /contato ficaram para trás quando a terceira
+   * vertente entrou.
+   */
+  artigo: "os" | "as";
   /** A linha em maiúscula acima do nome, no lugar que a peça usa para o grupo. */
   etiqueta: string;
   /** Uma linha, em português de dono de negócio — não em vocabulário de portfólio. */
@@ -95,6 +103,7 @@ export type TipoInfo = {
 export const TIPOS: Record<Tipo, TipoInfo> = {
   site: {
     chave: "site",
+    artigo: "os",
     rota: "/sites",
     titulo: "Sites",
     etiqueta: "Página que mostra dado",
@@ -104,6 +113,7 @@ export const TIPOS: Record<Tipo, TipoInfo> = {
   },
   automacao: {
     chave: "automacao",
+    artigo: "as",
     rota: "/automacoes",
     titulo: "Automações",
     etiqueta: "Ferramenta que roda sozinha",
@@ -125,6 +135,7 @@ export const TIPOS: Record<Tipo, TipoInfo> = {
   */
   motor: {
     chave: "motor",
+    artigo: "os",
     rota: "/motores",
     titulo: "Motores",
     etiqueta: "Peça que outro programa chama",

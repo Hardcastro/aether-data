@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MARCA } from "@/site.config";
-import { pecaPorSlug, rotaDaPeca } from "@/lib/manifesto";
+import { TIPOS, pecaPorSlug, rotaDaPeca } from "@/lib/manifesto";
 import { FundoCiclico } from "@/components/FundoCiclico";
 import { Particulas } from "@/components/Particulas";
 
@@ -94,13 +94,22 @@ export default function Contato() {
 
         <div className="ferramenta-pe">
           <p>Ou comece pelas peças, que respondem antes de qualquer conversa.</p>
+          {/*
+            Derivado de TIPOS, e nao escrito a mao: ate 08/09 estes eram dois
+            Link literais, e quando a terceira vertente entrou no manifesto
+            estas duas paginas continuaram oferecendo duas de tres, sem erro
+            de tipo e sem quebrar nada. Vertente nova aparece aqui sozinha.
+          */}
           <div className="prosa-acoes">
-            <Link className="btn-primario" href="/sites">
-              Ver os sites →
-            </Link>
-            <Link className="btn-secundario" href="/automacoes">
-              Ver as automações →
-            </Link>
+            {Object.values(TIPOS).map((t, i) => (
+              <Link
+                key={t.chave}
+                className={i === 0 ? "btn-primario" : "btn-secundario"}
+                href={t.rota}
+              >
+                Ver {t.artigo} {t.titulo.toLowerCase()} →
+              </Link>
+            ))}
           </div>
         </div>
       </main>

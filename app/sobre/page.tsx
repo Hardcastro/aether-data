@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MARCA } from "@/site.config";
-import { PECAS } from "@/lib/manifesto";
+import { PECAS, TIPOS } from "@/lib/manifesto";
 import { FundoCiclico } from "@/components/FundoCiclico";
 import { Particulas } from "@/components/Particulas";
 
@@ -59,7 +59,7 @@ export default function Sobre() {
           </p>
           <p>
             <strong>Elas foram escritas para o dia ruim.</strong> O cardápio
-            continua em pé quando a planilha que o alimenta sai do ar; o painel
+            não quebra quando a planilha que o alimenta sai do ar; o painel
             de indicadores continua servindo as outras séries quando uma API
             pública falha; o formulário diz que falhou em vez de responder
             &ldquo;enviado&rdquo; sem ter enviado. Isso está no código de cada uma.
@@ -68,13 +68,22 @@ export default function Sobre() {
 
         <div className="ferramenta-pe">
           <p>Comece pelas peças — elas respondem antes de qualquer conversa.</p>
+          {/*
+            Derivado de TIPOS, e nao escrito a mao: ate 08/09 estes eram dois
+            Link literais, e quando a terceira vertente entrou no manifesto
+            estas duas paginas continuaram oferecendo duas de tres, sem erro
+            de tipo e sem quebrar nada. Vertente nova aparece aqui sozinha.
+          */}
           <div className="prosa-acoes">
-            <Link className="btn-primario" href="/sites">
-              Ver os sites →
-            </Link>
-            <Link className="btn-secundario" href="/automacoes">
-              Ver as automações →
-            </Link>
+            {Object.values(TIPOS).map((t, i) => (
+              <Link
+                key={t.chave}
+                className={i === 0 ? "btn-primario" : "btn-secundario"}
+                href={t.rota}
+              >
+                Ver {t.artigo} {t.titulo.toLowerCase()} →
+              </Link>
+            ))}
           </div>
         </div>
       </main>
