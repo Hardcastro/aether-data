@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Instrument_Serif } from "next/font/google";
 import { MARCA } from "@/site.config";
 import { Cabecalho } from "@/components/Cabecalho";
+import { Rodape } from "@/components/Rodape";
 import "./globals.css";
 
 const inter = Inter({
@@ -67,8 +68,22 @@ export default function RootLayout({
           seja "use client" pode importar @/site.config. Se importar, `url`
           vira localhost em produção sem erro nenhum no build.
         */}
-        <Cabecalho email={MARCA.email} whatsapp={MARCA.whatsapp} />
+        <Cabecalho
+          email={MARCA.email}
+          whatsapp={MARCA.whatsapp}
+          perfis={[
+            MARCA.linkedin && { rotulo: "LinkedIn", href: MARCA.linkedin },
+            MARCA.github && { rotulo: "GitHub", href: MARCA.github },
+          ].filter((p): p is { rotulo: string; href: string } => Boolean(p))}
+        />
         {children}
+        <Rodape
+          nome={MARCA.nome}
+          perfis={[
+            MARCA.linkedin && { rotulo: "LinkedIn", href: MARCA.linkedin },
+            MARCA.github && { rotulo: "GitHub", href: MARCA.github },
+          ].filter((p): p is { rotulo: string; href: string } => Boolean(p))}
+        />
       </body>
     </html>
   );

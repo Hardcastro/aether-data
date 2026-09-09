@@ -6,6 +6,12 @@ import { usePathname } from "next/navigation";
 type Props = {
   email: string | null;
   whatsapp: string | null;
+  /**
+   * Perfis públicos, para a saída do canto direito. Chegam por prop e não por
+   * import: este componente é "use client", e nada que seja cliente pode
+   * importar @/site.config sem levar `url` para localhost em produção.
+   */
+  perfis: { rotulo: string; href: string }[];
 };
 
 /**
@@ -28,7 +34,7 @@ const ITENS = [
   { href: "/contato", rotulo: "Contatos" },
 ] as const;
 
-export function Cabecalho({ email, whatsapp }: Props) {
+export function Cabecalho({ email, whatsapp, perfis }: Props) {
   const pathname = usePathname();
   const contato = whatsapp ? `https://wa.me/${whatsapp}` : email ? `mailto:${email}` : null;
 
@@ -67,14 +73,34 @@ export function Cabecalho({ email, whatsapp }: Props) {
         })}
       </nav>
 
-      {contato ? (
-        <a className="contact-btn" href={contato}>
-          Falar comigo
-        </a>
-      ) : (
-        /* Regra do vazio: sem canal cadastrado, nada é desenhado no lugar. */
-        <span />
-      )}
+      {/*
+        O canto direito era um `<span />` vazio desde que o canal de contato
+        virou null: um terceiro slot que o `space-between` reservava e ninguém
+        ocupava. É onde a saída cabe.
+
+        Por que aqui e não num rodapé: `body` é `overflow: hidden` com
+        `height: 100vh`, e só `body:has(.ferramenta)` rola. Nas quatro telas de
+        vitrine — home, /sites, /automacoes, /motores — um rodapé em fluxo
+        ficaria fora da janela, recortado, inalcançável. O cabeçalho é fixo e
+        existe nas dez rotas.
+
+        Texto e não marca: "LinkedIn" e "GitHub" são os nomes dos lugares, e o
+        site inteiro é tipográfico — dois logotipos emprestados seriam os
+        únicos desenhos de terceiro na tela.
+      */}
+      <div className="saidas">
+        {contato && (
+          <a className="contact-btn" href={contato}>
+            Falar comigo
+          </a>
+        )}
+        {/* Regra do vazio: perfil ausente em site.config não desenha nada. */}
+        {perfis.map((p) => (
+          <a key={p.href} className="saida" href={p.href} target="_blank" rel="noreferrer">
+            {p.rotulo}
+          </a>
+        ))}
+      </div>
     </header>
   );
 }

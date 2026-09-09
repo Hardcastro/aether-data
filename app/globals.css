@@ -256,6 +256,117 @@ body {
   transform: translateY(-2px);
 }
 
+/*
+  A saída do canto direito do cabeçalho — o slot que o `space-between` sempre
+  reservou e que ficou vazio desde que o canal de contato virou null.
+
+  Peso deliberadamente abaixo do da nav: a nav é para onde o visitante vai
+  dentro do site, a saída é para onde ele vai depois. Sem a pílula de vidro,
+  sem fundo, só texto com a mesma altura de alvo dos itens da nav.
+*/
+.saidas {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.saida {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted-color);
+  text-decoration: none;
+  padding: 0.5rem 0.8rem;
+  border-radius: 100px;
+  white-space: nowrap;
+  transition: color 0.3s ease, background 0.3s ease;
+}
+.saida:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+/* Separador entre os dois, sem elemento no markup. */
+.saida + .saida {
+  position: relative;
+}
+.saida + .saida::before {
+  content: "";
+  position: absolute;
+  left: -0.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 0.9rem;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/*
+  O rodapé. Só desenha onde a página rola — a mesma condição que faz o body
+  rolar, escrita ao lado dela em `body:has(.ferramenta)`. Nas quatro telas de
+  vitrine o body é `overflow: hidden` de 100vh, e um rodapé em fluxo ali ficaria
+  fora da janela: recortado, invisível e fora do alcance do teclado. A saída
+  daquelas quatro é o canto direito do cabeçalho.
+*/
+.rodape {
+  display: none;
+}
+body:has(.ferramenta) .rodape {
+  /*
+    Coluna, e não duas metades com `space-between`. Tentei o lado a lado
+    primeiro e ele quebrava sozinho: a coluna útil aqui é ~564px e as duas
+    metades somavam ~570. Uma linha que quebra por 6px é acidente, não
+    decisão — e empilhado à esquerda o rodapé acompanha o resto da página,
+    que é toda alinhada à esquerda numa coluna de 46rem.
+  */
+  display: block;
+  position: relative;
+  z-index: 100;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 6% 3rem;
+}
+.rodape-caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--glass-border);
+}
+/*
+  A moldura larga das rotas de ferramenta é 74rem, não 46rem. O rodapé
+  acompanha, senão ele fica estreito no meio de uma tabela larga e lê como
+  outra página.
+*/
+body:has(.ferramenta-larga) .rodape {
+  max-width: 74rem;
+}
+.rodape-linha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.rodape-marca {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+.rodape-nota {
+  font-size: 0.8rem;
+  color: var(--muted-color);
+}
+.rodape-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+.rodape-links a {
+  font-size: 0.85rem;
+  color: var(--muted-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+.rodape-links a:hover {
+  color: white;
+  text-decoration: underline;
+}
+
 /* --------------------------------------------------------------------- hero */
 
 .hero {
