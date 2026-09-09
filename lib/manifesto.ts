@@ -417,18 +417,18 @@ export const PECAS: Peca[] = [
     // mais apertado do sistema. A regra "um matiz por peça, sempre na maior
     // lacuna" sobreviveu às dez; a décima primeira precisa de outro critério.
     cor: { inner: "#708a0b", mid: "#3f4e06", outer: "#101401" },
-    /**
-     * Nulo de propósito, e é a única peça assim. O print só pode ser tirado
-     * **depois** de a peça rodar alguns dias em produção: a metade de cima da
-     * tela é o registro de execuções, e um print tirado agora mostraria as
-     * rodadas do dublê da conferência.
-     *
-     * O `brief-14` escreve, em "Fora desta peça", que registro semeado é
-     * registro falso — e um print de registro semeado na vitrine é a mesma
-     * mentira num lugar mais visível. Até lá o painel desenha o espaço
-     * reservado com o nome da peça, que é o comportamento correto.
-     */
-    imagem: null,
+    /*
+      Ficou nulo de propósito até 09/09/2026, e o motivo era bom: o print só
+      podia ser tirado depois de a peça rodar alguns dias em produção, porque
+      a metade de cima da tela é o registro de execuções — um print tirado no
+      dia da entrega mostraria as rodadas do dublê da conferência, que é
+      registro semeado na vitrine, a mesma mentira num lugar mais visível.
+
+      O motivo venceu. São 27 dias corridos, 27 rodadas registradas e nenhum
+      buraco, e a captura é dessa tela: a linha que conta o registro contra o
+      calendário aparece no print, que é o argumento inteiro da peça.
+    */
+    imagem: "/prints/monitor-com-regra.jpg",
     url: "/monitor",
     interna: true,
     repo: "https://github.com/Hardcastro/aether-data",
@@ -477,7 +477,7 @@ export const PECAS: Peca[] = [
     // Matiz 7, o mesmo da vertente de automações, com luminosidade acima. É a
     // primeira peça sob o critério novo descrito acima.
     cor: { inner: "#c42510", mid: "#6f150a", outer: "#1c0502" },
-    imagem: null,
+    imagem: "/prints/fila-de-vagas.jpg",
     url: "https://hardcastro.github.io/vaga-fila/",
     repo: "https://github.com/Hardcastro/vaga-fila",
     stack: ["Python", "GitHub Actions", "GitHub Pages"],
@@ -495,7 +495,16 @@ export const PECAS: Peca[] = [
     tipo: "motor",
     // Matiz 303, o mesmo da vertente de motores, com luminosidade acima.
     cor: { inner: "#c410bb", mid: "#6f0969", outer: "#1c021a" },
-    imagem: null,
+    imagem: "/prints/pipeline-ia-dupla.jpg",
+    /*
+      Medido em 09/09/2026: 11,7 segundos para a primeira resposta, com o
+      serviço frio. As quatro peças de site respondem entre 0,3 e 1,7. E a
+      execução pede senha, que o visitante não tem — o cartão dizia "Ver no
+      ar" e entregava uma tela travada sem avisar. Dizer antes do clique é a
+      mesma regra das três peças de negócio inventado.
+    */
+    ressalva:
+      "A tela abre para qualquer um; executar pede senha. Em hospedagem gratuita, a primeira chamada demora alguns segundos.",
     url: "https://pipeline-ia-dupla.onrender.com",
     repo: "https://github.com/Hardcastro/pipeline-ia-dupla",
     stack: ["Node.js", "Express", "Gemini", "Server-Sent Events", "Docker"],
