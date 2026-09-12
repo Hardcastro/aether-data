@@ -2818,10 +2818,20 @@ body:has(.ferramenta) {
     overflow-x: hidden;
     overflow-y: auto;
   }
+  /*
+    7rem, e não 4rem. Medido em 1280x720: com 4rem o painel abria em y=73 e a
+    barra fixa termina em 111 — 38px do topo do painel passavam POR BAIXO do
+    vidro, e a pílula da nav caía em cima do canto do painel. Nenhuma altura
+    faz o painel de ~610px caber entre a barra e o pé numa janela de 720, então
+    a escolha real é entre esconder o topo atrás do vidro e rolar uns 30px.
+    Rolar é o certo: este bloco já soltou `overflow-y: auto` no body por essa
+    mesma razão, e conteúdo atrás de uma barra translúcida não é enquadramento,
+    é conteúdo perdido.
+  */
   .hero {
     height: auto;
     min-height: 100vh;
-    padding-top: 4rem;
+    padding-top: 7rem;
     padding-bottom: 2rem;
   }
   /*
@@ -2835,6 +2845,27 @@ body:has(.ferramenta) {
   */
   .titulo-lado {
     display: none;
+  }
+  /*
+    E com o eco tipográfico fora, a coluna da direita fica com um filho só —
+    então o `space-between` dela deixa de distribuir e prende o seletor no
+    topo, com a metade de baixo vazia. Não é composição, é sobra: a diagonal
+    que o `space-between` desenhava dependia justamente do elemento que acabou
+    de sair. Centralizado, o seletor volta a ler como par do painel.
+  */
+  .hero-right {
+    justify-content: center;
+  }
+  /*
+    E o painel deixa de ser centralizado na vertical aqui. `align-items:
+    center` só centraliza enquanto o filho cabe na caixa; um painel de ~605px
+    numa caixa de ~576 transborda pelas duas pontas, e metade do estouro sobe —
+    era isso que ainda punha 3px dele atrás do vidro depois dos 7rem. Ancorado
+    no topo, ele começa exatamente onde a barra termina, e o que não couber
+    sobra por baixo, que é onde a rolagem alcança.
+  */
+  .hero-centro {
+    align-items: flex-start;
   }
   .hero-left,
   .hero-right {
