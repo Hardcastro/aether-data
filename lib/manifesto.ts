@@ -7,10 +7,11 @@ export type Grupo = "puxa" | "confere" | "entrega" | "consulta" | "responde" | "
  * só deixou de ser a porta de entrada, porque é vocabulário nosso e não dele.
  *
  * O mapeamento é o mesmo do `plano-portfolio.md`: S1–S4 são `site`, N2–N5 são
- * `automacao`. Não confundir com `interna` — hoje as duas listas coincidem,
- * mas `interna` responde "onde a peça mora" (rota daqui ou projeto na Vercel) e
- * `tipo` responde "o que a peça é". Uma automação hospedada fora continuaria
- * `automacao` com `interna: false`.
+ * `automacao`. Não confundir com `interna` — `interna` responde "onde a peça
+ * mora" (rota daqui ou projeto na Vercel) e `tipo` responde "o que a peça é".
+ * As duas listas coincidiram até o `fila-de-vagas` entrar: ele é `automacao`
+ * hospedada no GitHub Pages, então sem `interna`. Era o caso hipotético que
+ * este parágrafo descrevia; desde 08/09/2026 é o caso real.
  */
 export type Tipo = "site" | "automacao" | "motor";
 
@@ -43,8 +44,11 @@ export type Peca = {
   interna?: boolean;
   /**
    * Uma linha curta que a peça precisa carregar junto com a capacidade, quando
-   * a capacidade sozinha deixaria o visitante entender errado. Hoje só os três
-   * negócios inventados usam.
+   * a capacidade sozinha deixaria o visitante entender errado. Nasceu para os
+   * três negócios inventados declararem a ficção; desde 08/09/2026 o
+   * `pipeline-ia-dupla` usa para outra coisa — senha na execução e partida a
+   * frio em hospedagem gratuita. São dois motivos no mesmo campo, e quem
+   * gerar texto a partir daqui não pode ler "tem ressalva" como "é invenção".
    *
    * Existe porque a ressalva estava nos metadados de cada destino desde
    * 08/09/2026 e em lugar nenhum do hub que manda o visitante para lá —
