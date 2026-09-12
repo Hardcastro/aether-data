@@ -42,14 +42,17 @@ type Config = {
   "Commit" e "vaga vazia" são duas palavras nossas gastas no lugar mais caro do
   site. No lugar entra a credencial que o visitante confere num clique.
 */
-const SUBTITULO_SELO = "Código aberto em todas";
-
 /*
-  Contado, nunca escrito — mesma regra de MARCA.descricao. Se amanhã entrar uma
-  peça sem repositório, a frase da home deixa de dizer "todas" sozinha, em vez
-  de continuar afirmando o que deixou de ser verdade.
+  Contado, nunca escrito. Se amanhã entrar uma peça sem repositório, o selo
+  deixa de dizer "todas" sozinho, em vez de continuar afirmando o que deixou de
+  ser verdade. A afirmação mora aqui, e não na frase de abertura, desde que
+  aquela virou boas-vindas: número conferido pertence ao lugar que já mostra
+  número.
 */
 const COM_CODIGO = PECAS.filter((p) => p.repo).length;
+
+const SUBTITULO_SELO =
+  COM_CODIGO === PECAS.length ? "Código aberto em todas" : `Código aberto em ${COM_CODIGO}`;
 
 function configurar(escopo: Tipo | null): Config {
   if (escopo === null) {
@@ -58,22 +61,22 @@ function configurar(escopo: Tipo | null): Config {
       itens: itensDaHome(),
       titulo: { linha1: "AEther", linha2: "Data" },
       /*
-        A frase da primeira dobra. A anterior dizia "agrupadas por vertente":
-        "vertente" é palavra de dentro de casa — não aparece em nenhum outro
-        lugar da interface, e o visitante vê "Sites", "Automações", "Motores".
-        O comentário do Cabecalho já tinha escrito a regra: porta de entrada
-        fala a língua de quem chega.
+        Boas-vindas, e não descrição de acervo — pedido dele, com as palavras
+        dele. Cinco versões passaram por aqui: vocabulário de dentro de casa,
+        posicionamento profissional, uma promessa que cobria metade das peças,
+        um verbete de catálogo correto e frio, e uma oferta que ainda listava.
+        Esta recebe.
 
-        No lugar dela, as duas coisas que fazem um estranho clicar, e que só
-        estavam ditas no fundo do site: o código está aberto, e as peças daqui
-        de dentro trabalham sem cadastro. Nenhuma das duas é adjetivo — as duas
-        se conferem em um clique.
+        As duas origens são verdadeiras e não pretendem ser taxonomia: os três
+        sites de negócio inventado não nasceram nem de curiosidade nem do
+        trabalho — nasceram para dar problema real a uma peça. "Alguns… outros…"
+        aceita isso; uma lista fechada não aceitaria.
+
+        A afirmação que se confere saiu daqui e foi para o selo, logo abaixo, que
+        já mostra o número. Nenhuma frase da primeira dobra afirma resultado.
       */
-      descricao: `${MARCA.promessa} ${PECAS.length} peças no ar${
-        COM_CODIGO === PECAS.length
-          ? ", todas com o código aberto"
-          : `, ${COM_CODIGO} delas com o código aberto`
-      } — e as que rodam aqui dentro funcionam agora, sem cadastro.`,
+      descricao:
+        "Seja bem-vindo ao meu hub de projetos. Alguns nasceram de curiosidade, outros de um problema do meu trabalho — todos abertos ao público, e os que rodam aqui dentro você usa sem cadastro. Aproveite.",
       selo: { titulo: `${PECAS.length} PEÇAS NO AR`, subtitulo: SUBTITULO_SELO },
       semJs: linhasSemJs(null),
     };
