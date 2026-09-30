@@ -64,7 +64,7 @@ export default function RootLayout({
           usa chegam como props, resolvidos aqui no servidor, onde
           VERCEL_PROJECT_PRODUCTION_URL existe de verdade.
 
-          A regra segue de pé e vale para qualquer componente novo: nada que
+          A regra vale para qualquer componente novo: nada que
           seja "use client" pode importar @/site.config. Se importar, `url`
           vira localhost em produção sem erro nenhum no build.
         */}

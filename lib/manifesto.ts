@@ -240,7 +240,7 @@ export const GRUPOS: Record<Grupo, GrupoInfo> = {
     **O argumento é o mesmo que ganhou no `confere` em 10/08, e o contra
     também.** Empilhar o vaga-fila em `puxa` ou em `responde` desfaz a
     demonstração de uma competência por peça que aquele grupo comprou. O contra
-    continua de pé: grupo com uma peça só descreve a peça, não uma competência.
+    não mudou: grupo com uma peça só descreve a peça, não uma competência.
 
     Fica por último de propósito. A ordem das chaves é a ordem em que os grupos
     aparecem, e a sequência lê como o caminho do dado. Procurar vem antes de
